@@ -1,62 +1,62 @@
-# Backplane check (integration stage 0), generated 2026-11-20T10:12:59.327Z
-Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 111.
+# Backplane check (integration stage 0), generated 2026-11-20T14:00:10.062Z
+Cards: ALU 96, Control 119, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 112.
 
 | signal | ALU | Control | Registers | Memory | Video | IO | note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| D0+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D0- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D1+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D1- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D2+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D2- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D3+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D3- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D4+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D4- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D5+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D5- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D6+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D6- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D7+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D7- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D8+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D8- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D9+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D9- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D10+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D10- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D11+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D11- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D12+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D12- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D13+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D13- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D14+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D14- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D15+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D15- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D16+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D16- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D17+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D17- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D18+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D18- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D19+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D19- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D20+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D20- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D21+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D21- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D22+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D22- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D23+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D23- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D24+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D24- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D25+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D25- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D26+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
-| D26- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:strong r |  |
+| D0+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D0- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D1+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D1- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D2+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D2- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D3+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D3- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D4+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D4- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D5+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D5- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D6+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D6- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D7+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D7- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D8+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D8- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D9+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D9- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D10+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D10- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D11+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D11- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D12+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D12- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D13+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D13- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D14+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D14- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D15+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D15- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D16+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D16- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D17+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D17- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D18+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D18- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D19+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D19- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D20+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D20- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D21+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D21- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D22+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D22- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D23+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D23- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D24+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D24- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D25+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D25- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D26+ | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
+| D26- | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r | D:tri r |  |
 | UA0 | r | D:tri r | r | r | r | r |  |
 | UA1 | r | D:tri r | r | r | r | r |  |
 | UA2 | r | D:tri r | r | r | r | r |  |
@@ -67,13 +67,15 @@ Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplan
 | UA7 | r | D:tri r | r | r | r | r |  |
 | UA8 | r | D:tri r | r | r | r | r |  |
 | UA9 | r | D:tri r | r | r | r | r |  |
-| CLK | r | r | r | r |  | r | **nobody drives it** |
-| SCLK |  |  |  | r | r | r | **nobody drives it** |
-| /RESET |  |  |  |  |  | D:strong r |  |
+| CLK | r | D:strong r | r | r |  | r |  |
+| SCLK |  | r |  | r | r | r | driven by the 40 MHz oscillator can on the Control card (world part) |
+| RESET | r | D:strong r | r | r | r | r |  |
+| /CEDGE |  | D:strong r |  |  | r | r |  |
+| STRETCH |  | D:weak r |  |  |  |  |  |
 | ABORT | r | r | r | D:tri r |  |  |  |
 | FK |  | r |  | D:tri |  |  |  |
 | SPRNR |  | D:tri r | r | r |  |  |  |
-| LOAD |  |  |  |  |  |  | no card uses it |
+| LOAD |  | r |  |  |  |  | driven by the copy engine (io-copy-engine.js; proven by load-sim, not yet in the I/O card netlist) |
 | LOAD_WE |  |  |  |  |  |  | no card uses it |
 | LOAD_SEL0 |  |  |  |  |  |  | no card uses it |
 | LOAD_SEL1 |  |  |  |  |  |  | no card uses it |
@@ -89,12 +91,11 @@ Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplan
 | BADADDR |  | r |  | D:tri |  |  |  |
 | PROT |  |  |  |  |  |  | no card uses it |
 | IORDY |  | r |  |  |  | D:od/weak |  |
-| /IRQ0 |  |  |  |  |  |  | no card uses it |
-| /IRQ1 |  |  |  |  |  |  | no card uses it |
-| /IRQ2 |  |  |  |  |  |  | no card uses it |
-| /IRQ3 |  |  |  |  |  |  | no card uses it |
-| /IRQ4 |  |  |  |  |  |  | no card uses it |
-| /IRQ5 |  |  |  |  |  |  | no card uses it |
+| IRQSET0 |  | r |  |  |  | D:strong r |  |
+| IRQSET1 |  | r |  |  |  | D:tri r |  |
+| IRQSET2 |  | r |  |  |  | D:tri r |  |
+| IRQSET3 |  | D:weak r |  |  |  |  |  |
+| IRQSET4 |  | D:weak r |  |  |  |  |  |
 | RSLOT0 |  | D:strong | r | r |  |  |  |
 | RSLOT1 |  | D:strong | r | r |  |  |  |
 | RSLOT2 |  | D:strong | r | r |  |  |  |
@@ -106,24 +107,24 @@ Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplan
 | PORT3 |  | D:tri |  |  | r | r |  |
 | PORT4 |  | D:tri |  |  | r | r |  |
 | PORT5 |  | D:tri |  |  | r | r |  |
-| MODE_T2 |  |  |  |  |  |  | no card uses it |
+| MODE |  | D:strong r |  | r | r |  |  |
 | PRIV | r | D:strong r |  | r |  |  |  |
 | IE | r | D:strong r |  |  |  |  |  |
-| PROT_EN |  |  |  |  |  |  | no card uses it |
+| PROTEN |  | D:strong r |  | r |  |  |  |
 | FP_RUN |  |  |  |  |  |  | no card uses it |
 | FP_STEP |  |  |  |  |  |  | no card uses it |
 | FP_STEPMODE |  |  |  |  |  |  | no card uses it |
 | HALTED |  | D:tri |  |  |  |  |  |
 
 ## Summary
-- Nobody drives (2): CLK, SCLK
+- Nobody drives (0): none
 - Always-on drivers on two cards (0): none
-- No card uses (18): LOAD, LOAD_WE, LOAD_SEL0, LOAD_SEL1, LOAD_SEL2, DIV0, PROT, /IRQ0, /IRQ1, /IRQ2, /IRQ3, /IRQ4, /IRQ5, MODE_T2, PROT_EN, FP_RUN, FP_STEP, FP_STEPMODE
+- No card uses (9): LOAD_WE, LOAD_SEL0, LOAD_SEL1, LOAD_SEL2, DIV0, PROT, FP_RUN, FP_STEP, FP_STEPMODE
 
 ## Per card: inputs its harness supplies that aren't backplane signals
-- **ALU** (3): GND, VCC, RESET
-- **Control** (8): GND, VCC, RESET, IRQSET0, IRQSET1, IRQSET2, IRQSET3, IRQSET4
-- **Registers** (3): GND, VCC, RESET
-- **Memory** (25): GND, VCC, RESET, MODE, PROTEN, SA0, SA1, SA2, SA3, SA4, SA5, SA6, SA7, SA8, SA9, SA10, SA11, SA12, SA13, SA14, SA15, SA16, SA17, SA18, /SWR
-- **Video** (6): GND, VCC, RESET, /CEDGE, MODE, VBUSY
-- **IO** (11): GND, VCC, RESET, /CEDGE, SD_MISO, SD_CD, K_CLK, K_DATA, M_CLK, M_DATA, RTC_OSC
+- **ALU** (2): GND, VCC
+- **Control** (3): GND, VCC, POR
+- **Registers** (2): GND, VCC
+- **Memory** (22): GND, VCC, SA0, SA1, SA2, SA3, SA4, SA5, SA6, SA7, SA8, SA9, SA10, SA11, SA12, SA13, SA14, SA15, SA16, SA17, SA18, /SWR
+- **Video** (3): GND, VCC, VBUSY
+- **IO** (9): GND, VCC, SD_MISO, SD_CD, K_CLK, K_DATA, M_CLK, M_DATA, RTC_OSC

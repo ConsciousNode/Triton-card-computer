@@ -12,6 +12,25 @@ could pass every card test. The Registers card's test catching a Control card fa
   `/RESET`), signals with two strong drivers, and signals nobody drives.
 - It checks the shared lines that should be open-drain (IORDY, /IRQ0..5) are open-drain on every card.
 
+## Status, 2026-11-20
+- **Stage 0 done.** Findings fixed: BTOP0 undriven (→ BTOPNZ, ALU + Control); the check's classifier called the
+  '16823 bus registers "always on" (they're three-state via x/OE, as `loadpath.js` already treats them).
+- **Stage 1, part 1 done: names and the clock/reset generator.**
+  - Backplane renamed to the cards' tested spellings: IRQSET0..4 (one-clock active-high pulses, not /IRQ0..5 levels),
+    MODE, PROTEN, RESET (active high). `/CEDGE` and `STRETCH` added to the backplane; it was missing `/CEDGE`, which the
+    Video and I/O cards need. The connector is now exactly full: 112 signals, 0 spares.
+  - `cards/clockgen.js` (on the Control card): '161 slot counter on SCLK, registered /CEDGE, glitch-free gated CLK
+    (CEN captured on SCLK's falling edge), RESET asserted at once by POR (MAX812, the KERK panel's reset button on its
+    MR input) or LOAD (the copy engine), released on the 2nd CPU edge. STRETCH (the carry-cycle stretch, ÷8) is built
+    and tested but pulled low until the ALU card drives it. Pull-downs on IRQSET3/4 (no disk or network IRQ here).
+  - `cards/clockgen-test.js`: half-slot stepping against an independent oracle, 22/22 cases, 7/7 mutants caught.
+  - Backplane check: every signal now has a declared driver (SCLK and LOAD declared as world-driven).
+  - Load-sim rerun after the renames: all five cards' tables load and verify.
+- **Still to decide:** DIV0 and PROT are on the backplane but no card uses them (two pins that could be freed).
+- **Bench items from stage 1:** CLK lags SCLK by one '08 delay, so feed the SCLK-side cards through a matched gate in
+  the same package. A CEN flop clocked on the wrong edge would race the CLK gate; a functional simulator only catches
+  that indirectly, through the reset-release timing.
+
 ## Stage 1: compose the cards
 - `integrate.js` builds each card's netlist and merges them into one. Local nets get the card's prefix (`IO:BUSY`); the
   backplane nets are shared.

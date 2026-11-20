@@ -23,8 +23,7 @@ const WIRES = [...Array(27).keys()].flatMap(k => [`D${k}+`, `D${k}-`]);   // the
 // Every backplane signal the copy engine drives during LOAD: the D bus, then the control and status lines that feed a
 // table somewhere (their drivers on the cards let go in LOAD). A table net that is one of these lines needs no
 // resistor: the engine drives it, and its colour is its line index. Free nets are coloured with any line index.
-// (Card spellings: IRQSET0..4 and MODE / PROTEN here; the backplane list says /IRQ0..5, MODE_T2, PROT_EN. The
-// integration netlist will reconcile the names.)
+// (These are the backplane's own spellings since integration stage 1, 2026-11-20: IRQSET0..4, MODE, PROTEN, RESET.)
 const LINES = [...WIRES, ...[...Array(10).keys()].map(i => `UA${i}`), ...[...Array(6).keys()].map(i => `PORT${i}`), ...[...Array(5).keys()].map(i => `RSLOT${i}`),
   'RESET', '/CEDGE', 'MODE', 'PRIV', 'PROTEN', 'IE', 'SPRNR', 'ABORT', 'FK', 'SF+', 'SF-', 'QT+', 'QT-', 'BTOPNZ', 'BADADDR', 'IORDY', ...[...Array(5).keys()].map(i => `IRQSET${i}`)];
 function colour(tables, maxColours = LINES.length, mutant) {
