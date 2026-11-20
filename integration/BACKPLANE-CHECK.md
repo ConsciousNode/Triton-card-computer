@@ -1,4 +1,4 @@
-# Backplane check (integration stage 0), generated 2026-11-20T06:54:51.567Z
+# Backplane check (integration stage 0), generated 2026-11-20T10:12:59.327Z
 Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 111.
 
 | signal | ALU | Control | Registers | Memory | Video | IO | note |
@@ -127,17 +127,3 @@ Cards: ALU 96, Control 112, Registers 20, Memory 251, Video 102, IO 70. Backplan
 - **Memory** (25): GND, VCC, RESET, MODE, PROTEN, SA0, SA1, SA2, SA3, SA4, SA5, SA6, SA7, SA8, SA9, SA10, SA11, SA12, SA13, SA14, SA15, SA16, SA17, SA18, /SWR
 - **Video** (6): GND, VCC, RESET, /CEDGE, MODE, VBUSY
 - **IO** (11): GND, VCC, RESET, /CEDGE, SD_MISO, SD_CD, K_CLK, K_DATA, M_CLK, M_DATA, RTC_OSC
-
-## Fixed: finding 1, BTOP0 → BTOPNZ (2026-11-20)
-- The ALU card's spare OR gate (U35 gate 4) now drives **BTOPNZ** = B26+ OR B26− ("B's top trit is not zero"): zero
-  new chips. The Control card's condition table reads it inverted for BTOPZ (table data only).
-- Renamed in `backplane.js` (and the pinout regenerated), `loadpath.js`, `control-card(-test).js`, `CONTROL-CARD.md`.
-- `alu-card-test.js` now checks BTOPNZ against the microsim's B every cycle.
-- Results:
-  - ALU directed: 37,543 µcycles, 0 mismatches (BTOPNZ = 0 on 30,350 cycles, 1 on 7,193). Mutant BTOP_FROM_B25: killed
-    at MOD_AL.
-  - Control: directed, irqbm, spr and fetchfault all 0; random 40,000: 0. The old, now-wrong polarity, put back for one
-    run: caught at MOD_AL (µPC 327 vs 326).
-  - load-sim: every table on all five cards correct.
-- Without this, **DIV and MOD would have hung or gone wrong on the real boards**: the divisor-alignment loop branches on
-  it.
