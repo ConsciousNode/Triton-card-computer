@@ -163,3 +163,12 @@ PSW ENTER is caught only by the interrupt probe: the fetch-fault probe traps wit
 
 **ALU card**, rerun under the corrected simulator: 0 mismatches on directed (37,543), fetch-fault, the interrupt
 probe (45,213), random (400,000), Desktop (600,000) and TritOS (600,000). All 10 mutants are still caught.
+
+## Integration changes (2026-11-20)
+- **UA is the next address.** The backplane UA0..9 now carries NA (through U105/U106 '244s, released in LOAD); U14/U15 hold
+  the executing word's address (UPC) for the incrementer. This removes a one-word delay slot on every taken branch that
+  only shows with all cards on one clock edge. The card test now clocks every register on one edge and runs in step
+  with the microsim instead of one cycle behind. Mutant UA_IS_UPC.
+- **The status latch resets to ISA-4's values** (MODE 1, PROTEN 1, the rest 0): U89's clears on RESET, MODE and PROTEN
+  stored inverted through U104 ('04). Mutant LATCH_NO_RESET.
+- **The clock/reset generator lives here** (clockgen.js, U200-U205, RN200): see INTEGRATION-PLAN.md.

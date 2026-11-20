@@ -27,9 +27,19 @@ function build(romsDir, csImages, mutant) {
     c.add(`U${10 + j}`, 'ALVCH16823', pins); }
   for (let j = 0; j < nCS; j++) { const pins = {}; for (let i = 1; i <= 8; i++) { const b = 8 * j + i - 1; if (b < CW.length) pins[`P${i}`] = `CW_${CW[b]}`; } c.add(`RN${1 + j}`, 'RPACK8', pins); }
   // --- micro-address register (2 x 574) ---
+  // Integration stage 2 (2026-11-20): the backplane UA is the NEXT address (NA, through U105/U106 '244 buffers that let go in
+  // LOAD), so every card's pipeline register latches the word the µPC is moving to at the same CPU edge. Before, UA was
+  // the µPC register's output: with one clock edge that's a three-stage loop (µPC -> store -> pipeline) and every taken
+  // branch ran one extra word (a delay slot the microsim doesn't have; each card test hid it by clocking its pipeline
+  // mid-cycle or comparing a cycle behind). The µPC register now keeps the executing word's address (UPC) for the
+  // incrementer only. Mutant UA_IS_UPC restores the old wiring.
+  const oldUA = mutant === 'UA_IS_UPC';
   for (let j = 0; j < 2; j++) { const pins = { CLK: 'CLK', '/OE': 'GND' };
-    for (let i = 1; i <= 8; i++) { const b = 8 * j + i - 1; pins[`D${i}`] = b < 10 ? `NA${b}` : 'GND'; if (b < 10) pins[`Q${i}`] = `UA${b}`; }
+    for (let i = 1; i <= 8; i++) { const b = 8 * j + i - 1; pins[`D${i}`] = b < 10 ? `NA${b}` : 'GND'; if (b < 10) pins[`Q${i}`] = oldUA ? `UA${b}` : `UPC${b}`; }
     c.add(`U${14 + j}`, 'LVC574', pins); }
+  if (!oldUA) for (let j = 0; j < 2; j++) { const pins = { '1/OE': 'GND', '2/OE': 'GND' };
+    for (let k = 0; k < 8; k++) { const b = 8 * j + k, h = k < 4 ? 1 : 2, i = k % 4 + 1; if (b < 10) { pins[`${h}A${i}`] = `NA${b}`; pins[`${h}Y${i}`] = `UA${b}`; } else pins[`${h}A${i}`] = 'GND'; }
+    c.add(`U${105 + j}`, 'LVC244', pins); }
   // --- IR: two trytes from bus trits 0..8 (2 x 16823, one per tryte), loads gated by ABORT ---
   c.add('U16', 'LVC32', { '1A': 'CW_/IR0CE', '1B': 'ABORT', '1Y': '/IR0LD', '2A': 'CW_/IR1CE', '2B': 'ABORT', '2Y': '/IR1LD', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
   for (const t of [0, 1]) { const pins = {};
@@ -60,7 +70,7 @@ function build(romsDir, csImages, mutant) {
   // --- next-address table + incrementer + muxes ---
   sram('U29', ['CW_SQ0', 'CW_SQ1', 'CW_SQ2', mutant === 'COND_IGNORED' ? 'GND' : 'COND', 'ABORT', 'FK', 'CW_RET', 'CW_CFETCH', mutant === 'NO_REDIRECT' ? 'GND' : 'IRQN', 'IORDY'], ['MS0', 'MS1', 'FX0', 'FX1', 'HOLD', 'HALTED'], TBL.naTable());
   const [ilo, ihi] = TBL.incTables();
-  const ua = [...Array(10).keys()].map(i => `UA${i}`);
+  const ua = [...Array(10).keys()].map(i => oldUA ? `UA${i}` : `UPC${i}`);   // the incrementer counts from the executing word's address
   sram('U30', [...ua, 'HOLD'], [...Array(8).keys()].map(i => `INC${i}`), ilo);
   sram('U31', [...ua, 'HOLD'], ['INC8', 'INC9'], ihi);
   const fixed = [0, 430, 435, 0];                                       // FETCH, TRAP_PROT, TRAP_BAD (wired constants, as roms.js)
@@ -113,6 +123,14 @@ function build(romsDir, csImages, mutant) {
   { const q = ['MODE', 'PRIV', 'IE', 'PROTEN', 'TRAPDIV0', 'IM0', 'IM1', 'IM2', 'IM3', 'IM4', 'IP0', 'IP1', 'IP2', 'IP3', 'IP4'];
     const pins = {}; for (const h of [1, 2]) Object.assign(pins, { [`${h}/OE`]: 'GND', [`${h}/CLKEN`]: 'GND', [`${h}CLK`]: 'CLK', [`${h}/CLR`]: 'VCC' });
     for (let b = 0; b < 18; b++) { const h = b < 9 ? 1 : 2, i = b % 9; pins[`${h}D${i}`] = q[b] ? `${q[b]}_N` : 'GND'; if (q[b]) pins[`${h}Q${i}`] = q[b]; }
+    // Reset state (integration stage 2, 2026-11-20: the first integrated run came up in MODE 0 and dispatched NOP to
+    // HALT, because this register had no reset and every card test preset it from outside). ISA-4 reset values:
+    // MODE 1, PROTEN 1, everything else 0. Both halves clear asynchronously while RESET; MODE and PROTEN are stored
+    // inverted (U104), so "cleared" is 1 for those two. 'LATCH_NO_RESET' is the mutant.
+    if (mutant !== 'LATCH_NO_RESET') { for (const h of [1, 2]) pins[`${h}/CLR`] = '/RESET_C';
+      pins['1D0'] = 'MODE_NI'; pins['1Q0'] = 'MODE_I'; pins['1D3'] = 'PROTEN_NI'; pins['1Q3'] = 'PROTEN_I';
+      c.add('U104', 'LVC04', { '1A': 'MODE_N', '1Y': 'MODE_NI', '2A': 'MODE_I', '2Y': 'MODE', '3A': 'PROTEN_N', '3Y': 'PROTEN_NI',
+        '4A': 'PROTEN_I', '4Y': 'PROTEN', '5A': 'RESET', '5Y': '/RESET_C', '6A': 'GND' }); }
     c.add('U89', 'ALVCH16823', pins); }
   // bus value mod 32 and nonzero (for SPR writes): 3 tryte tables + a combiner
   const tm = TBL.tryteMod();

@@ -1,5 +1,5 @@
-# Backplane check (integration stage 0), generated 2026-11-20T14:00:10.062Z
-Cards: ALU 96, Control 119, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 112.
+# Backplane check (integration stage 0), generated 2026-11-20T14:33:53.427Z
+Cards: ALU 96, Control 122, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 112.
 
 | signal | ALU | Control | Registers | Memory | Video | IO | note |
 | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -31,6 +31,37 @@ could pass every card test. The Registers card's test catching a Control card fa
   the same package. A CEN flop clocked on the wrong edge would race the CLK gate; a functional simulator only catches
   that indirectly, through the reset-release timing.
 
+- **Stage 1, part 2 done: the composed machine** (`integration/integrate.js`, `machine-sim.js`, `lockstep.js`).
+  - 657 chips in one netlist: the six cards from the same ROM images their own tests use, the clock/reset generator on
+    Control, and backplane termination. Card-local nets are prefixed ("IO:BUSY"); backplane and J2 nets are shared;
+    J2's one name mismatch (Memory VWEH = Video VBUSY) is joined explicitly. Every input any card's harness used to
+    supply is now driven inside the machine or is a declared world input.
+  - A precise static check (a '245 with DIR tied drives one side; registers with /OE are three-state): every read net
+    driven, no always-on driver sharing a net.
+  - `machine-sim.js`: one physical rule for every chip: clocked only when its own clock net rises, with pre-edge values;
+    derived clocks followed; async SRAMs write whenever /WE and /CE are low.
+  - **Three integration findings, all fixed:**
+    1. **The backplane floated.** On cycles where no card drives the bus, the ALU's tables read an undriven D0+. Every
+       card harness had quietly supplied 0. Fix: backplane termination, 65 three-state lines pulled down (9 resistor
+       packs on the backplane): idle bus = trit 0 on both rails, idle controls inactive.
+    2. **The machine came up in the wrong mode.** Control's status latch had no reset (every card test preset it from
+       outside, a declared exception). Fix: both halves clear on RESET; MODE and PROTEN are stored inverted (U104,
+       one '04), giving ISA-4's reset state: MODE 1, PROTEN 1, the rest 0. Mutant LATCH_NO_RESET (caught by lockstep).
+    3. **Every taken branch ran one extra microword.** UA was the µPC register's output, so µPC -> control store ->
+       pipeline was a three-stage loop with one clock edge: a delay slot the microsim doesn't have. The card tests hid
+       it (clocking pipelines mid-cycle, or comparing "one cycle behind"). Fix: the backplane UA is now the *next*
+       address (NA, through two '244 buffers that let go in LOAD); every card's pipeline latches the word the µPC is
+       moving to on the same edge. The µPC keeps the executing address (UPC) for the incrementer. Path: pipeline ->
+       next-address table -> muxes -> '244 -> each card's control store -> pipeline setup, about 45-60 ns of the 100 ns
+       cycle (conditions come from registers). Mutant UA_IS_UPC (caught by the Control test and lockstep).
+  - The Control card test now clocks every register on one edge (it used to run a cycle behind): directed, irqbm, spr
+    and fetchfault all 0 mismatches. Load-sim: Control's 42 tables still load and verify (UA releases in LOAD).
+  - **Lockstep:** after reset, the whole machine runs beside the microsim, comparing every microcycle: the executing
+    micro-address (UPC), the next address (UA), the bus, and MODE/PRIV/IE/PROTEN. Empty RAM (NOPs): 300 microcycles,
+    no divergence.
+- **Next: stage 2 proper.** Load a real program into the machine's RAM (and the microsim's), compare registers and
+  memory at instruction boundaries, then the directed programs, then the POOP OK boot.
+
 ## Stage 1: compose the cards
 - `integrate.js` builds each card's netlist and merges them into one. Local nets get the card's prefix (`IO:BUSY`); the
   backplane nets are shared.
