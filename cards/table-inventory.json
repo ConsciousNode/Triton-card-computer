@@ -1,0 +1,70 @@
+{
+ "date": "2026-11-19T03:56:47.327Z",
+ "perCard": [
+  {
+   "name": "ALU",
+   "n": 17,
+   "raw": 5640192,
+   "distinct": 921600,
+   "imgs": 7,
+   "big": [
+    "U60/U61/U62… 512 KB",
+    "U112/U113/U114 256 KB",
+    "U115 128 KB",
+    "U30 1 KB"
+   ]
+  },
+  {
+   "name": "Registers",
+   "n": 1,
+   "raw": 1024,
+   "distinct": 1024,
+   "imgs": 1,
+   "big": [
+    "U1 1 KB"
+   ]
+  },
+  {
+   "name": "Control",
+   "n": 42,
+   "raw": 5234944,
+   "distinct": 2609408,
+   "imgs": 31,
+   "big": [
+    "U94 512 KB",
+    "U24 256 KB",
+    "U25 256 KB",
+    "U50/U51/U52… 256 KB"
+   ]
+  },
+  {
+   "name": "Memory (3^14)",
+   "n": 65,
+   "raw": 2202432,
+   "distinct": 644032,
+   "imgs": 27,
+   "big": [
+    "U232 256 KB",
+    "U20/U21/U22… 64 KB",
+    "U52/U53/U54 64 KB",
+    "U10/U11/U12… 32 KB"
+   ]
+  },
+  {
+   "name": "Video",
+   "n": 27,
+   "raw": 8467456,
+   "distinct": 8467456,
+   "imgs": 27,
+   "big": [
+    "U28 2048 KB",
+    "U29 2048 KB",
+    "U30 2048 KB",
+    "U11 1024 KB"
+   ]
+  }
+ ],
+ "distinctImages": 93,
+ "distinctBytes": 12643520,
+ "rawBytes": 21546048
+}

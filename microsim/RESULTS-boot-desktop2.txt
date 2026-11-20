@@ -1,0 +1,5 @@
+TritOS Desktop 2.0 (Triton 4) on the microcoded card: 380,000 instruction steps in lockstep, 0 mismatches
+checked every step: PC, SP, flags, R0-R8, all 16 SPRs, timer mode/period/count/ticks, real-time ticks, step counter, selected unit, RTC offset;
+at boot and at the end: all 4,782,969 trytes of RAM, the whole framebuffer, every storage unit sector by sector (non-zero sectors per unit: 0:84 1:3), console
+boot: 300,000 steps = 0.219 s of card time at 10 MHz; overall 7.46 µcycles per instruction (21 s to simulate)
+timer mode at the end: 1 (1 = real time); interrupts taken on the card: 48; RTC reads 848188801 s since 2000-01-01

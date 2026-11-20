@@ -1,0 +1,3 @@
+programs 5000, instruction steps compared 2466095, MISMATCHES 0, stopped at a not-yet-microcoded opcode 15, programs ended by a fault on both sides (bad address / illegal opcode) 277
+µcycles per instruction (incl. 3-cycle fetch):
+TMAX:6.0  TMIN:6.0  CMPI:6.0  CMP:6.0  HALT:4.0  NOP:4.0  LI:4.0  LUI:7.0  MOV:5.0  ADD:6.0  ADDI:6.0  ADC:6.0  SUB:6.0  SUBI:6.0  SBC:6.0  NEG:5.0  LT:8.0  ST:8.0  LW:10.0  SW:10.0  PUSH:10.0  POP:8.0  JMP:4.0  JN:4.6  JZ:4.7  JP:4.9  JNZ:4.9  JNP:4.7  JNN:5.0  JR:4.0  CALL:10.0  RET:8.0  LMI:6.0  LHI:6.0  ADDM:7.0  ADDH:8.0  LDX:8.0  STX:8.0  LWX:10.0  SWX:10.0  JMPX:6.0  JNX:5.4  JZX:4.8  JPX:5.6  JNZX:5.5  JNPX:5.9  JNNX:5.6  CALLX:11.0  JALR:8.0  BCOPY:18.9

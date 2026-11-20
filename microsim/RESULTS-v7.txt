@@ -1,0 +1,19 @@
+microsim v7 (2026-11-18): T2 mode. node diff.js triton3.html 2000
+programs 2000 (512 starting in user mode), instruction steps compared 2969136, MISMATCHES 0, stopped at a not-yet-microcoded case 0, halted 1019
+T2 mode: 584 programs started in T2; 137269 steps compared in T2 mode (incl. switches from T3)
+emulator values outside 27 trits (EADDR/PC = card value + 3^27, the known TritonJS quirk): 26 comparisons
+traps taken (compared): illegal op 10596, privilege 2547, protection 151068, bad address 16821, div by 0 3272, syscalls 4464; interrupts taken 22782 (device lines raised 29776, plus the step timer)
+µcycles per instruction (incl. 3-cycle fetch; a trap's cycles count against the instruction that raised it):
+SHRI:48.2  SHR:65.7  SHLI:52.1  SHL:33.8  TUNARY:6.3  TXOR:6.4  TANY:6.2  TCON:6.3  TMAX:6.3  TMIN:6.6  CMPI:6.8  CMP:6.3  HALT:11.9  NOP:8.0  LI:4.4  LUI:7.3  MOV:5.4  ADD:6.3  ADDI:6.0  ADC:6.2  SUB:6.2  SUBI:6.1  SBC:6.2  MUL:198.5  MULI:84.3  DIV:147.6  MOD:153.4  NEG:5.6  LT:9.4  ST:8.3  LW:10.3  SW:11.6  PUSH:10.4  POP:8.8  JMP:4.4  JN:4.9  JZ:4.6  JP:4.9  JNZ:5.1  JNP:5.0  JNN:5.1  JR:4.1  CALL:10.3  RET:8.0  IN:22.9  OUT:23.2  LMI:6.6  LHI:6.4  ADDM:7.2  ADDH:8.2  LDX:8.4  STX:9.5  LWX:11.0  SWX:11.4  JMPX:6.5  JNX:4.5  JZX:4.4  JPX:5.7  JNZX:6.2  JNPX:4.8  JNNX:5.8  CALLX:12.8  JALR:8.1  BCOPY:17.0  BFILL:10.7  SYSCALL:20.2  IRET:8.1  MFSPR:6.1  MTSPR:6.1  illegal:21.8
+exit 0 after 244 s
+
+mutants:
+T2_PUSH_NO_WRAP => MISMATCH prog 7 step 8 op PUSH: sp -686 vs 18997
+T2_CALL_PUSHES_WORD => MISMATCH prog 6 step 5 op CALL: sp -3001 vs -3003
+T2_RET_SP_PLUS_3 => MISMATCH prog 19 step 6 op RET: sp -3003 vs -3001
+T2_MFSPR_ALLOWED => MISMATCH prog 54 step 6 op MFSPR: sf 1 vs 0; R0 3564 vs 0; halt
+IRQ_NO_ACK => MISMATCH prog 1 step 25 op ADD: ipend 0 vs 1
+SW_NO_WORD_CHECK => MEM mismatch prog 2035 at 5998
+
+directed: node t2-wrap-test.js
+T2 wrap test: 16 steps, PC went 9840 -> -9841, final SP 2997, R7 -270; 0 mismatches; halted true/true

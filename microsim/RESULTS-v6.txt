@@ -1,0 +1,20 @@
+microsim v6 (2026-11-18): interrupts. node diff.js triton3.html 2000
+programs 2000 (677 starting in user mode), instruction steps compared 3877147, MISMATCHES 0, stopped at a not-yet-microcoded case 4, halted 711
+emulator values outside 27 trits (EADDR/PC = card value + 3^27, the known TritonJS quirk): 16 comparisons
+traps taken (compared): illegal op 13632, privilege 4664, protection 211533, bad address 21408, div by 0 2206, syscalls 8006; interrupts taken 30099 (device lines raised 39008, plus the step timer)
+µcycles per instruction (incl. 3-cycle fetch; a trap's cycles count against the instruction that raised it):
+SHRI:43.9  SHR:49.5  SHLI:62.1  SHL:51.4  TUNARY:6.2  TXOR:6.3  TANY:6.3  TCON:6.3  TMAX:6.3  TMIN:6.2  CMPI:6.4  CMP:6.6  HALT:13.4  NOP:8.7  LI:4.4  LUI:7.2  MOV:5.3  ADD:6.8  ADDI:6.0  ADC:6.3  SUB:6.3  SUBI:6.4  SBC:6.2  MUL:199.0  MULI:83.8  DIV:126.7  MOD:112.0  NEG:5.2  LT:8.8  ST:8.7  LW:11.0  SW:11.1  PUSH:10.3  POP:8.8  JMP:4.4  JN:4.9  JZ:5.1  JP:4.9  JNZ:5.2  JNP:5.1  JNN:5.2  JR:4.2  CALL:10.3  RET:8.1  IN:23.2  OUT:23.2  LMI:6.6  LHI:6.5  ADDM:7.3  ADDH:8.3  LDX:10.1  STX:9.9  LWX:10.8  SWX:10.7  JMPX:6.4  JNX:4.5  JZX:4.5  JPX:4.5  JNZX:5.7  JNPX:4.9  JNNX:6.2  CALLX:11.7  JALR:8.2  BCOPY:16.8  BFILL:11.1  SYSCALL:20.5  IRET:8.1  MFSPR:6.1  MTSPR:6.1  illegal:22.0
+exit 0 after 307 s
+
+mutants:
+IRQ_NO_ACK => MISMATCH prog 8 step 255 op MFSPR: ipend 0 vs 4
+IRQ_ENDS_STEP => MISMATCH prog 8 step 255 op MFSPR: pc 102 vs 110; priv 1 vs 0; ie 1 vs 0
+IRQ_VECTOR_NOT_TIMES_3 => MISMATCH prog 8 step 255 op MFSPR: pc 102 vs 104; sf 0 vs 1; priv 1 vs 0; ie 1 vs 0
+IRQ_NOT_AT_FETCH => MISMATCH prog 8 step 255 op MFSPR: priv 1 vs 0; ie 1 vs 0; ipend 0 vs 4; ecause 9 vs 3; eaddr 0 vs 102
+TRAP_NO_KSP_SWITCH => MISMATCH prog 7 step 0 op LI: sp 60000 vs 50000
+BFILL_COUNT_BEFORE_WRITE => MISMATCH prog 19 step 27 op BFILL: R5 7 vs 6
+BCOPY_FAST_PC => MISMATCH prog 2 step 22 op BCOPY: pc 34 vs 33
+
+directed: node irq-blockmove-test.js
+BFILL 400 trytes with a timer IRQ every 7 steps: 565 steps, 80 interrupts taken mid-copy (handler count R7 = 80), 0 mismatches , µcycles 5152
+BCOPY 400 trytes with a timer IRQ every 7 steps: 565 steps, 80 interrupts taken mid-copy (handler count R7 = 80), 0 mismatches , µcycles 6909

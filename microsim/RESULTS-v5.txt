@@ -1,0 +1,26 @@
+microsim v5 (2026-11-18): privilege, protection, traps, SPRs, SYSCALL, IRET. node diff.js triton3.html 2000
+programs 2000 (726 starting in user mode), instruction steps compared 4016438, MISMATCHES 0, stopped at a not-yet-microcoded case 8, halted 662
+emulator values outside 27 trits (EADDR/PC = card value + 3^27, the known TritonJS quirk): 3023 comparisons
+traps taken (compared): illegal op 15141, privilege 5678, protection 215318, bad address 29355, div by 0 3212, syscalls 12820
+µcycles per instruction (incl. 3-cycle fetch; a trap's cycles count against the instruction that raised it):
+SHRI:59.8  SHR:54.2  SHLI:44.6  SHL:44.0  TUNARY:6.1  TXOR:6.1  TANY:6.1  TCON:6.2  TMAX:6.1  TMIN:6.2  CMPI:6.1  CMP:6.2  HALT:13.8  NOP:8.0  LI:4.2  LUI:7.1  MOV:5.2  ADD:6.2  ADDI:6.0  ADC:6.2  SUB:6.1  SUBI:6.2  SBC:6.2  MUL:199.4  MULI:84.3  DIV:114.9  MOD:132.8  NEG:5.1  LT:8.9  ST:9.8  LW:10.8  SW:10.2  PUSH:10.2  POP:8.2  JMP:4.0  JN:5.1  JZ:4.8  JP:4.8  JNZ:5.0  JNP:5.0  JNN:5.0  JR:4.0  CALL:10.1  RET:8.1  IN:23.1  OUT:23.1  LMI:6.3  LHI:6.2  ADDM:7.1  ADDH:8.1  LDX:9.5  STX:8.5  LWX:10.6  SWX:11.0  JMPX:6.2  JNX:4.5  JZX:4.8  JPX:4.4  JNZX:4.8  JNPX:6.4  JNNX:5.9  CALLX:12.2  JALR:8.0  BCOPY:15.3  BFILL:12.9  SYSCALL:20.6  IRET:8.1  MFSPR:6.2  MTSPR:6.1  illegal:21.7
+exit 0 after 302 s
+
+mutants (diff.js stops at the first mismatch when a mutant is planted):
+TRAP_NO_ENTER => Error('microcode livelock: no instruction boundary in 10,000 µcycles');
+IRET_NO_SP_RESTORE => MISMATCH prog 1 step 1 op IRET: sp 0 vs 49997
+TRAP_NO_KSP_SWITCH => MISMATCH prog 6 step 4 op 62: sp 60000 vs 50000
+TRAP_ENTER_TOO_EARLY => MISMATCH prog 6 step 4 op 62: sp 60000 vs 50000
+PUSH_SP_BEFORE_CHECK => MISMATCH prog 26 step 14 op PUSH: sp 50000 vs 49997; esp 50000 vs 49997
+SYSCALL_EPC_IS_FETCH_PC => MISMATCH prog 8 step 42 op SYSCALL: epc 62 vs 60
+MTSPR_NO_PRIV_CHECK => MISMATCH prog 12 step 25 op MTSPR: pc 28 vs 34; priv 0 vs 1; esr 28 vs 26
+BFILL_COUNT_BEFORE_WRITE => MISMATCH prog 150 step 9 op BFILL: R6 1 vs 0
+SW_NO_WORD_CHECK => MEM mismatch prog 1535 at 5998
+re-checked older mutants against v5 microcode:
+SHL_OF_NOT_STICKY => MISMATCH prog 1 step 2 op SHLI: of 1 vs 0
+BFILL_NO_ALIAS_GUARD => MISMATCH prog 4 step 44 op BFILL: R5 16 vs 18
+BFILL_FAST_PC => MISMATCH prog 13 step 22 op BFILL: pc 20 vs 19
+BFILL_NO_SELFMOD_GUARD => MISMATCH prog 54 step 65 op -116: pc 112 vs 72; R4 73 vs 74; R5 9 vs 8; epc 72 vs 26; esp 49994 vs 50000; esr 1 vs 0; ecause 1 vs 4; eaddr -116 vs 2212565756601
+DIV_ROUND_NOT_TRUNC => MISMATCH prog 1 step 52 op DIV: sf 1 vs -1; R0 1 vs -1
+BCOPY_FAST_NO_SELFMOD_GUARD => MISMATCH prog 244 step 12 op LW: pc 20 vs 18; sf 0 vs 1; R1 3629 vs 3628; R2 19 vs 20; R4 0 vs -1948; R6 5635 vs 5636
+ADC_NO_CARRY => MISMATCH prog 441 step 15 op ADC: R1 -2294250481 vs -2294250480

@@ -1,0 +1,11 @@
+1. ALU slice table: 48,114 slice inputs x functions checked against the arithmetic definitions, 0 wrong
+2. differential, machine built from the ROM images:
+   programs 300 (61 starting in user mode), instruction steps compared 396517, MISMATCHES 0, stopped at a not-yet-microcoded case 0, halted 169
+   I/O: 3251 IN/OUT steps compared, 451 completed disk DMA transfers of 1210 commands {"0":453,"1":3,"3":754} (device state, console, VRAM and the whole disk checked too)
+   T2 mode: 93 programs started in T2; 10155 steps compared in T2 mode (incl. switches from T3)
+3. TritOS 2.1 from the ROM images:
+   TritOS 2.1 scripted shell session: 7,213 instruction steps in lockstep, 0 mismatches; halted true; 69,732 µcycles = 9.67 per instruction = 0.007 s of card time at 10 MHz (1 s to simulate)
+   TritOS 2.0 [27-Trit Balanced-Ternary System]
+   TritOS 2.0 [27-Trit Balanced-Ternary System]
+   TritOS 2.1 self-hosting (asm of its own source): 1,788,709 instruction steps in lockstep, 0 mismatches; halted true; 13,845,879 µcycles = 7.74 per instruction = 1.385 s of card time at 10 MHz (102 s to simulate)
+   fixed point on the card: OS assembled 3057 trytes; byte-identical to the OS that was running

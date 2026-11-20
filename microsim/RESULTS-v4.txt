@@ -1,0 +1,12 @@
+microsim v4 (2026-11-18): shifts. node diff.js triton3.html 3000
+programs 3000, instruction steps compared 1368472, MISMATCHES 0, stopped at a not-yet-microcoded opcode 3, programs ended by a fault on both sides (bad address / illegal opcode) 167
+µcycles per instruction (incl. 3-cycle fetch):
+SHRI:37.7  SHR:41.3  SHLI:40.5  SHL:55.4  TUNARY:6.0  TXOR:6.0  TANY:6.0  TCON:6.0  TMAX:6.0  TMIN:6.0  CMPI:6.0  CMP:6.0  HALT:4.0  NOP:4.0  LI:4.0  LUI:7.0  MOV:5.0  ADD:6.0  ADDI:6.0  ADC:6.0  SUB:6.0  SUBI:6.0  SBC:6.0  MUL:201.0  MULI:85.0  DIV:130.3  MOD:119.0  NEG:5.0  LT:8.0  ST:8.0  LW:10.0  SW:10.0  PUSH:10.0  POP:8.0  JMP:4.0  JN:4.5  JZ:4.2  JP:4.7  JNZ:5.0  JNP:4.9  JNN:4.8  JR:4.0  CALL:10.0  RET:8.0  LMI:6.0  LHI:6.0  ADDM:7.0  ADDH:8.0  LDX:8.0  STX:8.0  LWX:10.0  SWX:10.0  JMPX:6.0  JNX:4.1  JZX:5.5  JPX:5.5  JNZX:5.8  JNPX:5.3  JNNX:5.7  CALLX:11.0  JALR:8.0  BCOPY:16.6  BFILL:9.9
+exit 0
+
+mutants (1500 programs each):
+SHL_OF_NOT_STICKY => MISMATCH prog 0 step 25 op -12: of -1 vs 0
+SHR_FILLS_FROM_LINK => MISMATCH prog 2 step 9 op -12: sf 0 vs 1; R3 0 vs 27
+SHIFT_NEG_NO_SWAP => MISMATCH prog 10 step 31 op -10: of 0 vs -1
+SHIFT_CLAMP_27 => MISMATCH prog 0 step 25 op -12: cf 0 vs 1
+SHIFT_K0_KEEPS_FLAGS => MISMATCH prog 7 step 1 op -12: sf 1 vs 0

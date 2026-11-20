@@ -1,0 +1,23 @@
+{"date":"2026-11-18T19:50:53.559Z","which":"fetchfault","mutant":null,"cycles":63,"driven":9,"bad":0,"first":null,"cov":{"write":21,"read":9,"ABORT":1}}
+{"date":"2026-11-18T19:51:01.619Z","which":"irqbm","mutant":null,"cycles":45213,"driven":19682,"bad":0,"first":null,"cov":{"write":16542,"read":19682,"SPRNR":3}}
+{"date":"2026-11-18T19:51:10.041Z","which":"spr","mutant":null,"cycles":53985,"driven":10295,"bad":0,"first":null,"cov":{"write":16024,"read":10499,"SPRNR":265,"ABORT":2523}}
+{"date":"2026-11-18T19:51:15.749Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-18T19:52:12.043Z","which":"random","mutant":null,"cycles":300000,"driven":44093,"bad":0,"first":null,"cov":{"write":80780,"read":44097,"ABORT":1883,"SPRNR":1,"aborted write":249}}
+{"date":"2026-11-18T19:53:25.665Z","which":"desktop","mutant":null,"cycles":400000,"driven":72285,"bad":0,"first":null,"cov":{"write":104687,"read":72285,"SPRNR":1}}
+{"date":"2026-11-18T19:55:29.528Z","which":"tritos21","mutant":null,"cycles":400000,"driven":59108,"bad":0,"first":null,"cov":{"write":91542,"read":59108}}
+{"date":"2026-11-18T19:55:29.687Z","which":"spr","mutant":"SPRNR_IGNORED","cycles":74,"driven":4,"bad":21,"first":"cycle 54 upc 498 (MTSPR): slot 0: 1 vs 0","cov":{"write":18,"read":8,"SPRNR":6}}
+{"date":"2026-11-18T19:56:05.719Z","which":"random","mutant":"ABORT_IGNORED","cycles":200000,"driven":32030,"bad":0,"first":null,"cov":{"write":55854,"read":32034,"ABORT":1620,"SPRNR":1,"aborted write":249}}
+{"date":"2026-11-18T19:56:05.886Z","which":"random","mutant":"SLOT_BITS_SWAPPED","cycles":29,"driven":5,"bad":21,"first":"cycle 6 upc 104 (SWX): bus 2584299575072 vs 0","cov":{"write":6,"read":5}}
+{"date":"2026-11-18T19:59:04.865Z","which":"bcfault","mutant":null,"cycles":95,"driven":27,"bad":0,"first":null,"cov":{"write":30,"read":27,"ABORT":1}}
+{"date":"2026-11-18T19:59:05.037Z","which":"bcfault","mutant":"ABORT_IGNORED","cycles":95,"driven":27,"bad":0,"first":null,"cov":{"write":30,"read":27,"ABORT":1}}
+{"date":"2026-11-18T19:59:12.270Z","which":"bcfault","mutant":null,"cycles":73,"driven":14,"bad":0,"first":null,"cov":{"write":24,"read":14,"ABORT":1,"aborted write":1}}
+{"date":"2026-11-18T19:59:12.429Z","which":"bcfault","mutant":"ABORT_IGNORED","cycles":69,"driven":14,"bad":21,"first":"cycle 49 upc 360 (BF_BODY): slot 6: 0 vs 7","cov":{"write":24,"read":14,"ABORT":1,"aborted write":1}}
+{"date":"2026-11-18T22:39:10.898Z","which":"bcfault","mutant":null,"cycles":73,"driven":14,"bad":0,"first":null,"cov":{"write":24,"read":14,"ABORT":1,"aborted write":1}}
+{"date":"2026-11-19T03:58:40.155Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-19T04:06:59.385Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-19T04:51:43.681Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-19T05:18:31.589Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-19T06:31:32.045Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-19T09:51:28.457Z","which":"random","mutant":null,"cycles":300000,"driven":44093,"bad":0,"first":null,"cov":{"write":80780,"read":44097,"ABORT":1883,"SPRNR":1,"aborted write":249}}
+{"date":"2026-11-20T02:39:19.320Z","which":"random","mutant":null,"cycles":40000,"driven":4790,"bad":0,"first":null,"cov":{"write":10992,"read":4790}}
+{"date":"2026-11-20T09:41:23.904Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}

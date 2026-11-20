@@ -1,0 +1,25 @@
+PASS  SD model: CMD0 with a bad CRC answers CRC error (0x09)
+PASS  SD model: CMD0 answers idle
+PASS  SD model: CMD17 before init is rejected (illegal command)
+PASS  SD model: CMD8 echoes 0xAA
+PASS  SD model: ACMD41 leaves idle after 3 tries
+PASS  SD model: CMD24 accepted
+PASS  SD model: write data response 0x05
+PASS  SD model: busy for 3 bytes after write
+PASS  SD model: CMD17 accepted
+PASS  SD model: block reads back
+PASS  lockstep: 48,409 instruction steps, microsim vs emulator 0 mismatches
+PASS  driver results printed by the CPU: "0000" (init, read, write, read-back all 0)
+PASS  sector 5 read by the ternary driver matches the SD image
+PASS  sector 7 written by the ternary driver decodes correctly on the SD card
+PASS  sector 7 read back matches what was written
+PASS  both SD cards (microsim side, emulator side) hold identical bytes
+PASS  keyboard: 40 scancodes taken by interrupt, in order, none lost
+PASS  keyboard inhibit exercised (device held off for 224 steps while the latch was full)
+PASS  negative control: wrong CMD0 CRC makes init fail ("-1-1-1-1")
+
+SD init 1.46 ms; read one 729-tryte sector 7242 instructions = 6.32 ms; write one sector 7360 instructions = 5.50 ms (at 10 MHz, keyboard interrupts included)
+PASS  byte-at-a-time drivers (CPU splits trytes with DIV/MOD) also pass: read 20.05 ms, write 49.37 ms per sector
+read rate ≈ 115.3K trytes/s
+whole run: 48,409 instructions, 361,400 µcycles = 36.1 ms at 10 MHz; SPI bytes 4845
+ALL PASS

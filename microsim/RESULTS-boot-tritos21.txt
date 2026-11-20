@@ -1,0 +1,39 @@
+TritOS 2.1 scripted shell session: 7,213 instruction steps in lockstep, 0 mismatches; halted true; 69,732 µcycles = 9.67 per instruction = 0.007 s of card time at 10 MHz (1 s to simulate)
+--- console (card) ---
+TritOS 2.0 [27-Trit Balanced-Ternary System]
+Type HELP for commands.
+tritos> list
+FILES ON DISK:
+CALC  64 trytes
+DRAW  48 trytes
+GAME  48 trytes
+ASM   250 trytes
+HELLO 27 trytes
+tritos> run calc
+calc> 10T+11
+= 110 (12)
+calc> q
+tritos> draw
+DRAW: 27-COLOR SPECTRUM + PIXEL PLOTTED AT (121,121)
+tritos> game
+TRIT-QUEST: TARGET BALANCED AT 0, SCORE +10T
+tritos> save MYFILE BALANCED_TERNARY_OK
+SAVED.
+tritos> reboot
+TritOS 2.0 [27-Trit Balanced-Ternary System]
+Type HELP for commands.
+tritos> list
+FILES ON DISK:
+CALC  64 trytes
+DRAW  48 trytes
+GAME  48 trytes
+ASM   250 trytes
+HELLO 27 trytes
+MYFIL 19 trytes
+tritos> type MYFILE
+BALANCED_TERNARY_OK
+tritos> quit
+
+---
+TritOS 2.1 self-hosting (asm of its own source): 1,788,709 instruction steps in lockstep, 0 mismatches; halted true; 13,845,879 µcycles = 7.74 per instruction = 1.385 s of card time at 10 MHz (96 s to simulate)
+fixed point on the card: OS assembled 3057 trytes; byte-identical to the OS that was running

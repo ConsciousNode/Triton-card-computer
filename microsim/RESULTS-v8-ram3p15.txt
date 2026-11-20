@@ -1,0 +1,8 @@
+RAM 14348907 trytes
+programs 400 (95 starting in user mode), instruction steps compared 581156, MISMATCHES 0, stopped at a not-yet-microcoded case 0, halted 208
+I/O: 6305 IN/OUT steps compared, 1256 completed disk DMA transfers of 1271 commands {"0":1260,"1":9,"3":2} (device state, console, VRAM and the whole disk checked too)
+T2 mode: 121 programs started in T2; 23194 steps compared in T2 mode (incl. switches from T3)
+emulator values outside 27 trits (EADDR/PC = card value + 3^27, the known TritonJS quirk): 0 comparisons
+traps taken (compared): illegal op 2360, privilege 1789, protection 26573, bad address 2332, div by 0 177, syscalls 1429; interrupts taken 6243 (device lines raised 8533, plus the step timer)
+µcycles per instruction (incl. 3-cycle fetch; a trap's cycles count against the instruction that raised it):
+SHRI:67.0  SHR:67.0  SHLI:39.3  SHL:67.4  TUNARY:6.2  TXOR:6.2  TANY:6.1  TCON:6.2  TMAX:6.2  TMIN:6.1  CMPI:6.1  CMP:6.1  HALT:12.2  NOP:7.0  LI:4.3  LUI:7.4  MOV:5.4  ADD:6.3  ADDI:6.0  ADC:12.5  SUB:6.1  SUBI:9.0  SBC:6.2  MUL:198.6  MULI:84.3  DIV:176.6  MOD:56.8  NEG:5.2  LT:10.3  ST:9.1  LW:14.7  SW:10.6  PUSH:10.2  POP:8.2  JMP:4.1  JN:4.2  JZ:4.9  JP:5.3  JNZ:7.5  JNP:5.3  JNN:5.7  JR:4.5  CALL:10.4  RET:7.7  IN:19.2  OUT:17.9  LMI:6.4  LHI:6.4  ADDM:7.2  ADDH:8.3  LDX:13.4  STX:8.3  LWX:12.0  SWX:11.1  JMPX:6.3  JNX:9.9  JZX:6.6  JPX:6.8  JNZX:9.6  JNPX:5.2  JNNX:8.1  CALLX:11.1  JALR:8.1  BCOPY:16.8  BFILL:12.3  SYSCALL:20.2  IRET:8.2  MFSPR:6.1  MTSPR:6.0  illegal:22.1

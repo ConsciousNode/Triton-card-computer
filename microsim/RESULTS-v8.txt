@@ -1,0 +1,22 @@
+microsim v8 (2026-11-18): IN/OUT and the I/O card model. node diff.js triton3.html 2000
+programs 2000 (499 starting in user mode), instruction steps compared 2781273, MISMATCHES 0, stopped at a not-yet-microcoded case 0, halted 1085
+I/O: 28437 IN/OUT steps compared, 4519 completed disk DMA transfers of 8435 commands {"0":5275,"1":845,"2":2,"3":2313} (device state, console, VRAM and the whole disk checked too)
+T2 mode: 605 programs started in T2; 117077 steps compared in T2 mode (incl. switches from T3)
+emulator values outside 27 trits (EADDR/PC = card value + 3^27, the known TritonJS quirk): 10 comparisons
+traps taken (compared): illegal op 14674, privilege 5840, protection 148466, bad address 12257, div by 0 1077, syscalls 2648; interrupts taken 29754 (device lines raised 41571, plus the step timer)
+µcycles per instruction (incl. 3-cycle fetch; a trap's cycles count against the instruction that raised it):
+SHRI:48.9  SHR:41.1  SHLI:30.8  SHL:57.6  TUNARY:6.5  TXOR:6.4  TANY:6.7  TCON:6.4  TMAX:6.1  TMIN:6.2  CMPI:6.5  CMP:6.3  HALT:11.4  NOP:8.2  LI:4.4  LUI:7.2  MOV:5.3  ADD:6.2  ADDI:6.0  ADC:7.3  SUB:7.4  SUBI:6.3  SBC:6.2  MUL:197.5  MULI:84.3  DIV:99.4  MOD:85.5  NEG:5.3  LT:8.6  ST:9.3  LW:11.1  SW:10.4  PUSH:10.5  POP:8.3  JMP:4.1  JN:4.8  JZ:4.9  JP:4.8  JNZ:5.3  JNP:5.0  JNN:5.8  JR:4.2  CALL:10.6  RET:8.0  IN:18.0  OUT:17.9  LMI:6.6  LHI:6.5  ADDM:7.3  ADDH:8.5  LDX:10.2  STX:9.4  LWX:10.6  SWX:11.2  JMPX:6.3  JNX:5.4  JZX:6.6  JPX:5.8  JNZX:5.2  JNPX:5.5  JNNX:7.8  CALLX:11.8  JALR:8.3  BCOPY:16.5  BFILL:11.2  SYSCALL:19.9  IRET:8.1  MFSPR:6.0  MTSPR:6.2  illegal:21.6
+exit 0 after 246 s
+
+mutants (diff.js, 3000 programs each):
+IN_NO_FLAGS => MISMATCH prog 22 step 6 op IN: sf 0 vs 1
+OUT_SENDS_RS1 => MISMATCH prog 4 step 13 op OUT: io.diskLba 430 vs 5799
+IN_NO_PRIV_CHECK => MISMATCH prog 25 step 73 op IN: pc 118 vs 64; sp 60000 vs 49997; sf 1 vs 0; priv 0 vs 1; ie 0 vs 1; epc 62 vs 60; ecause 2 vs 7; eaddr 40 vs 0
+T2_PUSH_NO_WRAP => MISMATCH prog 19 step 3 op PUSH: sp -686 vs 18997
+IRQ_NO_ACK => MISMATCH prog 0 step 59 op NOP: ipend 2 vs 3
+T2_OUT_PRIV_CHECKED => NOT CAUGHT by 3,000 random programs (T2 + user mode + I/O is rare in the generator)
+
+directed: node t2-user-io-test.js
+T2 user-mode I/O test: 7 steps, priv 1, console "K5"; 0 mismatches
+MICROSIM_MUTANT=T2_OUT_PRIV_CHECKED node t2-user-io-test.js
+T2 user-mode I/O test: 4 steps, priv 1, console "K"; MISMATCH step 4: pc 8/2610 priv 1/0 console "K"/""

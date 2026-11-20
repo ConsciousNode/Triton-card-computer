@@ -1,0 +1,6 @@
+{"date":"2026-11-19T06:30:19.772Z","FULL":16,"SAMPLE":4,"mutant":null,"entries":3317,"clocks":53075,"writes":884,"ok":false,"msgs":["cycle 53075: CE_AND.1A: net FLAG0 undriven"]}
+{"date":"2026-11-19T06:31:08.008Z","FULL":16,"SAMPLE":4,"mutant":null,"entries":3317,"clocks":53075,"writes":884,"ok":true,"msgs":[]}
+{"date":"2026-11-19T06:36:01.864Z","FULL":1024,"SAMPLE":200,"mutant":null,"entries":50709,"clocks":811347,"writes":48276,"ok":true,"msgs":[]}
+{"date":"2026-11-19T06:36:36.167Z","FULL":16,"SAMPLE":4,"mutant":"WORD_SWAP","entries":3317,"clocks":53075,"writes":884,"ok":false,"msgs":["694 entries wrong after loading (first ALU:U30@0 0 vs 3)"]}
+{"date":"2026-11-19T06:37:11.642Z","FULL":16,"SAMPLE":4,"mutant":"STROBE_EARLY","entries":3317,"clocks":53075,"writes":884,"ok":false,"msgs":["178 entries wrong after loading (first ALU:U30@0 0 vs 3)"]}
+{"date":"2026-11-19T06:37:46.714Z","FULL":16,"SAMPLE":4,"mutant":"END_IGNORED","entries":3317,"clocks":53170,"writes":885,"ok":false,"msgs":["cycle 53089: 0 tables with /WE low ()","cycle 53105: 0 tables with /WE low ()","cycle 53121: 0 tables with /WE low ()","cycle 53153: 0 tables with /WE low ()","cycle 53169: 0 tables with /WE low ()","1 entries wrong after loading (first Memory (3^14):U54@65535 3 vs 0)"]}
