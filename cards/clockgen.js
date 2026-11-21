@@ -22,6 +22,15 @@
 //   - RESET (active high, the backplane signal every card already reads): asserted at once by POR or LOAD through the
 //     flops' async presets; released through two flops on CLK, so every card leaves reset on the same CPU edge.
 //
+//   - THE HALT LATCH (2026-11-21, integration finding 5: HALT didn't halt). The next-address table (Control U29) has
+//     always made HALTED during a HALT word, but nothing read it, so on the whole machine HALT went on to FETCH and ran
+//     the next instruction (the console workload printed "32P" from the PRNUM after its HALT). Now U206's spare half
+//     captures HALTED | HALTQ on CLK, so it stays set; its /Q gates CEN's D input (U207's spare AND), so after the
+//     edge that ends the HALT word CLK never rises again: the CPU stops at FETCH, as the microsim's HALT leaves it.
+//     RESET clears the latch at once (/CLR from U201's spare inverter), so the KERK panel's reset button restarts the
+//     machine. Interrupts don't wake it (HALT as the emulator has it). Only spare gates: no new chips.
+//     Mutant HALT_IGNORED: the wiring before (CEN's D straight from CEDGE).
+//
 // Slot counter: a '161 on SCLK, loaded with 0 at the edge that ends the /CEDGE slot. CEDGE_NEXT, the value /CEDGE takes
 // for the next slot, is decoded from the count: slot 2 and not stretched, or slot 6.
 //   CEDGE_NEXT = Q1 & /Q0 & (Q2 | /STRETCH)
@@ -32,34 +41,36 @@
 'use strict';
 function build(c, { mutant = null } = {}) {
   c.input('SCLK', 'POR', 'LOAD', 'STRETCH');
+  const halt = mutant !== 'HALT_IGNORED';
   // U200: '161 slot counter. Loads 0 when /CEDGE is low (at the edge ending the /CEDGE slot); counts otherwise.
   c.add('U200', 'LVC161', { MR_N: 'VCC', CP: 'SCLK', PE_N: mutant === 'NO_RELOAD' ? 'VCC' : '/CEDGE', CEP: 'VCC', CET: 'VCC',
     D0: 'GND', D1: 'GND', D2: 'GND', D3: 'GND', Q0: 'SQ0', Q1: 'SQ1', Q2: 'SQ2', Q3: 'SQ3', TC: 'STC' });
   // U201: '04: /Q0, /STRETCH, /SCLK (for the falling-edge CEN flop), /POR-or-LOAD, spare
   c.add('U201', 'LVC04', { '1A': 'SQ0', '1Y': 'SQ0N', '2A': 'STRETCH', '2Y': 'STRN', '3A': 'SCLK', '3Y': '/SCLK',
-    '4A': 'RSTREQ', '4Y': '/RSTREQ', '5A': 'SQ1', '5Y': 'SQ1N', '6A': 'GND' });
+    '4A': 'RSTREQ', '4Y': '/RSTREQ', '5A': 'SQ1', '5Y': 'SQ1N', ...(halt ? { '6A': 'RESET', '6Y': '/RESETC' } : { '6A': 'GND' }) });
   // U202: '08: Q1&/Q0, (..)&(Q2|/STRETCH), CLK = SCLK & CEN, spare
   c.add('U202', 'LVC08', { '1A': 'SQ1', '1B': mutant === 'DECODE_SLOT3' ? 'SQ0' : 'SQ0N', '1Y': 'SL2',
     '2A': 'SL2', '2B': 'LONGOK', '2Y': 'CEDGE_NEXT',
     '3A': 'SCLK', '3B': mutant === 'CLK_UNGATED' ? 'VCC' : 'CEN', '3Y': 'CLK', '4A': 'SQ0', '4B': 'SQ1N', '4Y': 'SL1' });
   // U203: '32: Q2 | /STRETCH, POR | LOAD
   c.add('U203', 'LVC32', { '1A': 'SQ2', '1B': mutant === 'STRETCH_IGNORED' ? 'VCC' : 'STRN', '1Y': 'LONGOK',
-    '2A': 'POR', '2B': mutant === 'LOAD_IGNORED' ? 'GND' : 'LOAD', '2Y': 'RSTREQ', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
+    '2A': 'POR', '2B': mutant === 'LOAD_IGNORED' ? 'GND' : 'LOAD', '2Y': 'RSTREQ',
+    ...(halt ? { '3A': 'HALTED', '3B': 'HALTQ', '3Y': 'HALT_D' } : { '3A': 'GND', '3B': 'GND' }), '4A': 'GND', '4B': 'GND' });
   // U204: '74. Half 1 registers /CEDGE on SCLK. Half 2 captures CEN on SCLK's falling edge (clock = /SCLK).
   c.add('U204', 'LVC74', { '1D': 'CEDGE_NEXT', '1CLK': 'SCLK', '1/CLR': 'VCC', '1/PRE': 'VCC', '1Q': 'CEDGE', '1/Q': '/CEDGE',
-    '2D': 'CEDGE', '2CLK': mutant === 'CEN_ON_RISING' ? 'SCLK' : '/SCLK', '2/CLR': 'VCC', '2/PRE': 'VCC', '2Q': 'CEN' });
+    '2D': halt ? 'CEN_D' : 'CEDGE', '2CLK': mutant === 'CEN_ON_RISING' ? 'SCLK' : '/SCLK', '2/CLR': 'VCC', '2/PRE': 'VCC', '2Q': 'CEN' });
   // U205: '74, reset synchronizer on CLK: presets assert RESET at once; two CPU edges of 0 release it
   c.add('U205', 'LVC74', { '1D': 'GND', '1CLK': 'CLK', '1/CLR': 'VCC', '1/PRE': '/RSTREQ', '1Q': 'RST1',
     '2D': mutant === 'ONE_FLOP_RELEASE' ? 'GND' : 'RST1', '2CLK': 'CLK', '2/CLR': 'VCC', '2/PRE': '/RSTREQ', '2Q': 'RESET' });
   // U207: '08: WSTB_NEXT = SL1 & (Q2 | /STRETCH). U206: '74 half 1 registers it on SCLK (/Q is the backplane /WSTB);
   // half 2 spare. Mutant WSTB_ALWAYS: no strobe (/WSTB tied low), the wiring before 2026-11-20.
-  c.add('U207', 'LVC08', { '1A': 'SL1', '1B': 'LONGOK', '1Y': 'WSTB_NEXT', '2A': 'GND', '2B': 'GND', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
+  c.add('U207', 'LVC08', { '1A': 'SL1', '1B': 'LONGOK', '1Y': 'WSTB_NEXT', ...(halt ? { '2A': 'CEDGE', '2B': '/HALTQ', '2Y': 'CEN_D' } : { '2A': 'GND', '2B': 'GND' }), '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
   c.add('U206', 'LVC74', { '1D': 'WSTB_NEXT', '1CLK': 'SCLK', '1/CLR': 'VCC', '1/PRE': 'VCC', '1Q': 'WSTB', '1/Q': mutant === 'WSTB_ALWAYS' ? 'WSTB_UNUSED' : '/WSTB',
-    '2D': 'GND', '2CLK': 'GND', '2/CLR': 'VCC', '2/PRE': 'VCC' });
+    ...(halt ? { '2D': 'HALT_D', '2CLK': 'CLK', '2/CLR': '/RESETC', '2/PRE': 'VCC', '2Q': 'HALTQ', '2/Q': '/HALTQ' } : { '2D': 'GND', '2CLK': 'GND', '2/CLR': 'VCC', '2/PRE': 'VCC' }) });
   if (mutant === 'WSTB_ALWAYS') c.add('U208', 'LVC04', { '1A': 'VCC', '1Y': '/WSTB', '2A': 'GND', '3A': 'GND', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
   // RN200: pull-downs so these lines can never float: IRQSET3/IRQSET4. (STRETCH had one until 2026-11-20; the ALU card
   // now drives it from an inverter that is always on, and its pipeline's pull-ups make it 0 in RESET.) (Triton 4's disk and network interrupts have no source on this bare-ports machine).
   c.add('RN200', 'RPACK8G', { P2: 'IRQSET3', P3: 'IRQSET4' });
   return c;
 }
-module.exports = { build, MUTANTS: ['NO_RELOAD', 'DECODE_SLOT3', 'CLK_UNGATED', 'STRETCH_IGNORED', 'LOAD_IGNORED', 'CEN_ON_RISING', 'ONE_FLOP_RELEASE', 'WSTB_ALWAYS'] };
+module.exports = { build, MUTANTS: ['NO_RELOAD', 'DECODE_SLOT3', 'CLK_UNGATED', 'STRETCH_IGNORED', 'LOAD_IGNORED', 'CEN_ON_RISING', 'ONE_FLOP_RELEASE', 'WSTB_ALWAYS', 'HALT_IGNORED'] };

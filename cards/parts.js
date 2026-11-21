@@ -100,12 +100,20 @@ const P = {
   // TC = Q3..0 all ones & CET. clock(): the rising edge.
   LVC161: { out: ['Q0', 'Q1', 'Q2', 'Q3', 'TC'], reg: true,
     eval(c, g, s) { const q = g('MR_N') ? (c.q | 0) : 0; for (let i = 0; i < 4; i++) s(`Q${i}`, (q >> i) & 1); s('TC', q === 15 && g('CET') ? 1 : 0); },
+    // MR is asynchronous (it's the '161, not the '163): asserted, it clears the count at once, not at the next edge.
+    // Until 2026-11-21 the model only hid the count while MR was low, and released the old count after (found by
+    // the JPUSB cross-check: a buffer-address reset with no clock edge inside it came back as the old address)
+    async(c, g) { if (!g('MR_N') && (c.q | 0) !== 0) { c.q = 0; return true; } return false; },
     clock(c, g) { if (!g('MR_N')) { c.q = 0; return; } const q = c.q | 0;
       if (!g('PE_N')) c.q = g('D0') | (g('D1') << 1) | (g('D2') << 2) | (g('D3') << 3); else if (g('CEP') && g('CET')) c.q = (q + 1) & 15; } },
   // 74LVC74: dual D flip-flop with async /CLR and /PRE (per half: xD, xCLK edge, x/CLR, x/PRE -> xQ, x/Q)
   LVC74: { out: ['1Q', '1/Q', '2Q', '2/Q'], reg: true,
     eval(c, g, s) { c.q = c.q || [0, 0, 0]; for (const h of [1, 2]) { let q = c.q[h] | 0; if (!g(`${h}/CLR`)) q = 0; else if (!g(`${h}/PRE`)) q = 1;
         if (c.pins[`${h}Q`]) s(`${h}Q`, q); if (c.pins[`${h}/Q`]) s(`${h}/Q`, q ^ 1); } },
+    // /CLR and /PRE are asynchronous: asserted, they set the flop's state at once (fixed 2026-11-21, with the '161's MR;
+    // before, the model only overrode Q while they were low, and the old state came back when they released)
+    async(c, g) { c.q = c.q || [0, 0, 0]; let ch = false;
+      for (const h of [1, 2]) { const want = !g(`${h}/CLR`) ? 0 : !g(`${h}/PRE`) ? 1 : null; if (want !== null && (c.q[h] | 0) !== want) { c.q[h] = want; ch = true; } } return ch; },
     clock(c, g) { c.q = c.q || [0, 0, 0]; for (const h of [1, 2]) { if (!c.pins[`${h}CLK`] || c.pins[`${h}CLK`] === 'GND') continue;
         c.q[h] = !g(`${h}/CLR`) ? 0 : !g(`${h}/PRE`) ? 1 : g(`${h}D`); } } },
   // 74LVC164: 8-bit serial-in parallel-out shift register. Serial in = A & B, shifts on the CLK rising edge, /CLR async.
@@ -166,6 +174,38 @@ const P = {
   // resistor makes the wired-AND (2026-11-19: the I/O card's IORDY, one open-drain source per thing that can stall)
   LVC07: { out: sec(6).map(i => `${i}Y`), tri: true,
     eval(c, g, s) { for (const i of sec(6)) if (c.pins[`${i}Y`]) s(`${i}Y`, g(`${i}A`) ? 'Z' : 0); } },
+  // ---- JPUSB (the Bare USB card, 2026-11-21): parts Neon's netlist uses that the card computer didn't have ----
+  // 74LVC86A: quad 2-input XOR
+  LVC86: { out: sec(4).map(i => `${i}Y`), eval(c, g, s) { for (const i of sec(4)) if (c.pins[`${i}Y`]) s(`${i}Y`, g(`${i}A`) ^ g(`${i}B`)); } },
+  // Microchip SST39SF040: 512K x 8 parallel flash, read here (the table image is programmed before it's fitted). Reads
+  // while /CE and /OE are low. A write (/WE low with /CE low) would be a flash command cycle; nothing on JPUSB does it,
+  // so the model refuses one rather than pretend.
+  SST39SF040: { out: [...Array(8).keys()].map(i => `DQ${i}`), tri: true,
+    eval(c, g, s) { if (!g('/CE') && !g('/WE')) throw new Error(`${c.ref}: flash write cycle (not modelled)`);
+      const en = !g('/CE') && !g('/OE'); let a = 0; for (let i = 0; i < 19; i++) a |= g(`A${i}`) << i; const d = c.mem ? (c.mem[a] | 0) : 0;
+      for (let i = 0; i < 8; i++) if (c.pins[`DQ${i}`]) s(`DQ${i}`, en ? (d >> i) & 1 : 'Z'); } },
+  // 74LVC257A: quad 2:1 mux with 3-state outputs (the '157 with /OE instead of /E): JPUSB finding 1's write path
+  LVC257: { out: sec(4).map(i => `${i}Y`), tri: true,
+    eval(c, g, s) { const off = g('/OE'), sel = off ? 0 : g('S'); for (const i of sec(4)) if (c.pins[`${i}Y`]) s(`${i}Y`, off ? 'Z' : g(sel ? `${i}I1` : `${i}I0`)); } },
+  // TI SN74LVCH245A: the '245 with bus-hold on its data pins (JPUSB finding 3, 2026-11-21). Each A and B pin has a
+  // weak keeper that holds the last level the net was driven to, so a bus nobody drives keeps its last value instead of
+  // floating (no pull-up/pull-down resistors needed; TI SCES008). Modelled as a weak driver of that level on every
+  // data pin the chip isn't driving; the level is learned from the settled net (async hook, never itself a change).
+  LVCH245: { out: [...sec(8).map(i => `B${i}`), ...sec(8).map(i => `A${i}`)], tri: true,
+    eval(c, g, s) { const off = g('/OE'), dir = off ? 0 : g('DIR'); c.hold = c.hold || {};
+      for (const i of sec(8)) { const drA = !off && !dir, drB = !off && dir;
+        if (drB && c.pins[`B${i}`]) s(`B${i}`, g(`A${i}`)); if (drA && c.pins[`A${i}`] && c.pins[`B${i}`]) s(`A${i}`, g(`B${i}`));
+        for (const [side, dr] of [['A', drA], ['B', drB]]) { const k = `${side}${i}`; if (!dr && c.pins[k] && c.hold[k] !== undefined) s(k, c.hold[k], true); } } },
+    async(c, g) { c.hold = c.hold || {}; for (const side of ['A', 'B']) for (const i of sec(8)) { const k = `${side}${i}`; if (!c.pins[k]) continue; const x = g(k); if (x === 0 || x === 1) c.hold[k] = x; } return false; } },
+  // NOT A REAL PART. Neon's simulator gave its SRAM model separate write-data inputs D0..D7 beside IO0..IO7; the real
+  // IS61WV5128EDBLL has one set of common I/O pins. JPUSB's packet buffer (U41/U42) uses both, so it is translated
+  // with this model only to prove the translation equals Neon's design; it can't be built until the write path is
+  // fixed (JPUSB.md). Reads drive IO while /CE, /OE low and /WE high; write() stores D when /CE and /WE are low.
+  NEON_SRAM_SPLIT_IO: { out: [...Array(8).keys()].map(i => `IO${i}`), tri: true, notBuildable: true,
+    eval(c, g, s) { const en = !g('/CE') && !g('/OE') && g('/WE'); let a = 0; for (let i = 0; i < 19; i++) a |= g(`A${i}`) << i;
+      const d = c.mem[a] | 0; for (let i = 0; i < 8; i++) if (c.pins[`IO${i}`]) s(`IO${i}`, en ? (d >> i) & 1 : 'Z'); },
+    write(c, g) { if (g('/CE') || g('/WE')) return -1; let a = 0; for (let i = 0; i < 19; i++) a |= g(`A${i}`) << i;
+      let d = 0; for (let i = 0; i < 8; i++) if (c.pins[`D${i}`]) d |= g(`D${i}`) << i; c.mem[a] = d; return a; } },
 };
 P.LV164 = P.LVC164;
 module.exports = { P };

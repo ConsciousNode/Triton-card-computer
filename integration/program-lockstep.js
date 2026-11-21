@@ -227,6 +227,145 @@ ${[0, 7, -1, 42, -9841, 1234567].map(v => `${ld('R1', v)}\n  CALLX PRNUM\n  LI R
   HALT
 ${PRNUM}`;
 
+
+// ---- stage 3 part 2 (2026-11-21, afternoon): the timer, the RTC and timer interrupts on the whole machine.
+// The program is the I/O card's own timer workload, lifted from cards/io-ports-test.js (Kehai Interim, 2026-11-19/20,
+// workload C), unchanged: a snapshot reader, interrupts at periods of 23 and 5 ticks, a 1-tick period with interrupts
+// off (the firings collapse into one pending IRQ), the timer off and on, a snapshot loop walking across the tick grid,
+// and the ports around 48..53 that nothing answers. Here nobody stands in for the Control card: the IRQSET0 pulse goes
+// over the backplane, Control's pending latch takes it, and the interrupt is taken by the real microcode. The lockstep
+// compares every microcycle, so an interrupt taken one instruction early or late fails at once.
+// Declared, as at card level: RTC_OSC toggles every slot (a fast test crystal; the CD4060 is the real divider), and
+// the RTC chip's counter starts at RTC0 in both machines (the coin cell kept it running).
+const TCOUNT = 24000, RING = 24010, RTC0 = 0x1234FFFE;
+const TIMER = `
+MAIN: ${ld('R1', VBR)}
+MTSPR R1, #5
+LI R1, #1
+MTSPR R1, #3
+LI R1, #1
+MTSPR R1, #2
+LI R6, #0
+LI R7, #0
+CALLX SNAPREAD
+LI R1, #233
+OUT R1, #50
+LI R1, #255
+OUT R1, #51
+OUT R1, #49
+LI R7, #8
+OUT R7, #53
+L1: CALLX SNAPREAD
+${ld('R2', TCOUNT)}
+LW R3, R2, #0
+CMPI R3, #6
+JNX L1
+LI R7, #0
+OUT R7, #53
+LI R5, #6
+L2: CALLX SNAPREAD
+SUBI R5, R5, #1
+CMPI R5, #0
+JNZX L2
+LI R1, #251
+OUT R1, #50
+OUT R1, #49
+LI R7, #8
+OUT R7, #53
+L3: CALLX SNAPREAD
+${ld('R2', TCOUNT)}
+LW R3, R2, #0
+CMPI R3, #20
+JNX L3
+LI R1, #0
+MTSPR R1, #2
+LI R1, #255
+OUT R1, #50
+OUT R1, #49
+CALLX SNAPREAD
+CALLX SNAPREAD
+LI R7, #0
+OUT R7, #53
+LI R1, #1
+MTSPR R1, #2
+L4: ${ld('R2', TCOUNT)}
+LW R3, R2, #0
+CMPI R3, #21
+JNX L4
+LI R7, #0
+OUT R7, #53
+LI R5, #61
+L5: OUT R7, #52
+IN R2, #48
+SUBI R5, R5, #1
+CMPI R5, #0
+JNZX L5
+IN R1, #49
+IN R1, #50
+IN R1, #53
+IN R1, #55
+LI R1, #77
+OUT R1, #48
+OUT R1, #54
+OUT R1, #55
+LI R5, #3
+L6: CALLX SNAPREAD
+SUBI R5, R5, #1
+CMPI R5, #0
+JNZX L6
+HALT
+; SNAPREAD: snapshot, read the 8 stored bytes (select | enable in R7), assemble two 32-bit values, keep the last 4 pairs
+SNAPREAD: PUSH R1
+PUSH R2
+PUSH R3
+PUSH R4
+OUT R7, #52
+LI R4, #0
+LI R3, #3
+SR1: ADD R1, R3, R7
+OUT R1, #53
+IN R2, #48
+MULI R4, R4, #256
+ADD R4, R4, R2
+SUBI R3, R3, #1
+CMPI R3, #0
+JNNX SR1
+${ld('R2', RING)}
+ADD R2, R2, R6
+SW R4, R2, #0
+LI R4, #0
+LI R3, #7
+SR2: ADD R1, R3, R7
+OUT R1, #53
+IN R2, #48
+MULI R4, R4, #256
+ADD R4, R4, R2
+SUBI R3, R3, #1
+CMPI R3, #3
+JNZX SR2
+${ld('R2', RING)}
+ADD R2, R2, R6
+SW R4, R2, #3
+ADDI R6, R6, #6
+CMPI R6, #24
+JNX SRX
+LI R6, #0
+SRX: OUT R7, #53
+POP R4
+POP R3
+POP R2
+POP R1
+RET
+TISR: PUSH R2
+PUSH R3
+${ld('R2', TCOUNT)}
+LW R3, R2, #0
+ADDI R3, R3, #1
+SW R3, R2, #0
+POP R3
+POP R2
+IRET
+`;
 // ---- one program on a fresh machine
 const m = compose({ mutants: MUT }); const chip = new Map(m.chips.map(c => [c.ref, c]));
 if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.STA });   // STA=table or STA=cycle
@@ -255,26 +394,37 @@ function runOne(src, label, opts = {}) {
   for (const [a, b] of ROWS) { a.mem.fill(0); b.mem.fill(0); } for (const c of RFCHIPS) c.mem.fill(0);
   const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0; mm.upc = mm.cs.addr.RESET;   // power-on: the RESET routine first
   if (opts.io) mm.io = new BareIO(mm, new SdCard(4));
-  const term = uart(); let G = 0, waited = 0;
+  const term = uart(); let G = 0, waited = 0, edgeNow = -1, edgePrev = -1;
+  // the microsim's timer runs on this machine's slot clock (stage 3 part 2, 2026-11-21): an OUT happens at the edge
+  // of the cycle just run (edgeNow), an instruction boundary is the edge before it (edgePrev), as the card-level
+  // harness has them (cards/io-ports-test.js machine(): now = G + 3, boundary = G - 1, run before the slots)
+  if (opts.timer) { mm.io.clk = { r0: null, now: () => edgeNow, boundary: () => edgePrev, oscFalls: s2 => Math.floor(s2 / 2) }; opts.timer(mm, () => G); }
   code.forEach((v, i) => { mm.mem[i] = v; ramPut(i, v); });
   if (opts.preload) for (const [a, v] of opts.preload(asm.symbols)) { mm.mem[a] = v; ramPut(a, v); }
   const CAP = opts.cap || 20000;
   const mmWrites = new Set(); const mw = mm.memWrite.bind(mm); mm.memWrite = (a, v) => { mmWrites.add(mm.phys(a)); mw(a, v); };
   const s = new MachineSim(m); const POR = 12;
   for (let k = 0; k < POR; k++) s.microcycle(); s.set('POR', 0);
-  let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null; const t0 = Date.now(); const trace = [];
+  let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null, atBoundary = false; const t0 = Date.now(); const trace = [];
   const bad = msg => { if (!fail) fail = { cyc, instr, msg }; };
   while (!fail && !mm.halted && cyc < CAP) {
     // one microcycle, slot by slot (as MachineSim.microcycle does), so the timing pass sees every slot
-    let v = null; for (let j = 0; ; j++) { const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0; term.slot(lo.get('CON_TX'), G++);
+    let v = null; for (let j = 0; ; j++) { if (opts.timer) s.set('RTC_OSC', G & 1);
+      const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0; term.slot(lo.get('CON_TX'), G++);
+      if (opts.onSlot) opts.onSlot(hi, lo, G - 1, last);
       if (STA && lo.get('RESET') !== 1) STA.analyze(lo, mm.upc, { j, last });
       if (TS && prevLo && lo.get('RESET') !== 1) TS.analyze(prevLo, lo, mm.upc, { j, last }); prevLo = lo;
       if (last) { v = lo; break; } if (j > 16) throw new Error('no CPU edge'); }
+    edgePrev = edgeNow; edgeNow = G - 1;
     if (v.get('RESET') === 1) continue;
     if (pendingPc !== null) { const g = pcOf(); if (g !== pendingPc) bad(`PC ${g} vs ${pendingPc}`); pendingPc = null; }
     const modeWant = { MODE: mm.mode, PRIV: mm.priv, IE: mm.ie, PROTEN: mm.protEn };
     const want = mm.upc, got = word(v, 'Control:UPC'), mu = mm.cs.store[mm.upc];
     if (mu.SEQ === 'WAIT') { mm.ioWait = v.get('IORDY') === 1 ? 0 : 1; waited += mm.ioWait; }   // declared: the card's wait
+    // the devices' instruction-boundary tick: MicroMachine.step() calls io.tick() before an instruction's first cycle;
+    // this harness drives cycle() directly, so it ticks here, at the same point (2026-11-21: without it the timer model
+    // never raised its IRQ and the whole machine, correctly, took one the microsim didn't)
+    if (opts.io && atBoundary) { mm.io.tick(); atBoundary = false; }
     mm.lastBus = ABORTED; const r = mm.cycle(); cyc++;
     const aborted = mm.lastBus === ABORTED; if (aborted) mm.lastBus = undefined;
     // an instruction fetch puts the tryte on the bus (the Memory card drives it, the Control card's IR loads from it);
@@ -291,7 +441,7 @@ function runOne(src, label, opts = {}) {
     // there; any damage would show in the registers, PC or memory at the next boundary.
     else if (gb !== wb && !aborted) bad(`bus ${gb} vs ${wb}`);
     for (const [k, x] of Object.entries(modeWant)) if (v.get(k) !== x) bad(`${k} ${v.get(k)} vs ${x}`);
-    if (r === 'END') { instr++;
+    if (r === 'END') { instr++; atBoundary = true;
       for (let sl = 0; sl < 32; sl++) { const g = slotVal(sl); if (g !== mm.rf[sl]) { bad(`register slot ${sl}: ${g} vs ${mm.rf[sl]}`); break; } }
       for (const x of mmWrites) if (ramGet(x) !== mm.mem[x]) { bad(`RAM ${x}: chips ${ramGet(x)} vs ${mm.mem[x]}`); break; }
       for (const [ref, a] of s.writes) { if (!ROWREF.has(ref)) continue; const x = unloc(ROWREF.get(ref), a);
@@ -304,11 +454,25 @@ function runOne(src, label, opts = {}) {
   const capped = !fail && !mm.halted; if (capped && !opts.capOk) fail = { cyc, instr, msg: `did not halt in ${CAP} microcycles` };
   // the terminal: after HALT the last character may still be on the wire; run on until the line has been quiet for
   // two character times, then the terminal must hold exactly what the microsim's console printed
+  // after HALT the machine must stay stopped (integration finding 5, 2026-11-21: HALT didn't halt; the halt latch in
+  // clockgen.js): the PC and the executing micro-address frozen, no RAM written, for 64 slots (and the terminal's drain)
+  // (8 slots first: the edge that ends the HALT word still happens, and parks the micro-address at FETCH, where the
+  // microsim's HALT leaves its upc; that must agree too)
+  let frozen = null; if (!fail && mm.halted) { for (let k = 0; k < 8; k++) { const { lo } = s.slot(); term.slot(lo.get('CON_TX'), G++); }
+    frozen = { pc: pcOf(), upc: word(s.v, 'Control:UPC'), w: s.writes.length };
+    // only the CPU's state counts: main RAM and the register file (the Video card's scan-out keeps writing its line
+    // buffer while the CPU is halted, as it should: a halted machine still shows its screen)
+    if (frozen.upc !== mm.upc) fail = { cyc, instr, msg: `halted at micro-address ${frozen.upc}, the microsim at ${mm.upc}` }; }
+  if (frozen) { for (let k = 0; k < 64; k++) { const { lo } = s.slot(); term.slot(lo.get('CON_TX'), G++); } }
   if (opts.io && !fail) { let k = 0; while (k++ < 16000 && !(term.st === 'idle' && G - term.lastStop > 2 * 10 * UB)) { const { lo } = s.slot(); term.slot(lo.get('CON_TX'), G++); }
     if (term.text !== mm.io.consoleOut) fail = { cyc, instr, msg: `terminal received ${JSON.stringify(term.text)}, the microsim printed ${JSON.stringify(mm.io.consoleOut)}` };
     else if (term.framing) fail = { cyc, instr, msg: `${term.framing} framing errors` };
     console.log(`  terminal: ${JSON.stringify(term.text)} (${term.text.length} bytes, ${term.framing} framing errors); the CPU waited ${waited} microcycles on IORDY`); }
+  if (frozen && !fail) { const pc = pcOf(), upc = word(s.v, 'Control:UPC');
+    const cpuW = s.writes.slice(frozen.w).filter(([r]) => ROWREF.has(r) || RFCHIPS.some(c => c.ref === r));
+    if (pc !== frozen.pc || upc !== frozen.upc || cpuW.length) fail = { cyc, instr, msg: `after HALT the machine kept running: PC ${frozen.pc} -> ${pc}, UPC ${frozen.upc} -> ${upc}, ${cpuW.length} main/register RAM writes (${[...new Set(cpuW.map(([r, a]) => `${r}@${a}`))].slice(0, 6).join(' ')})` }; }
   if (opts.stats) opts.stats(mm);
+  if (opts.finish && !fail) { const msg = opts.finish(mm, asm.symbols); if (msg) fail = { cyc, instr, msg }; }
   if (fail) { console.log(trace.join('\n'));
     // who drives the bus right now (diagnostics only): every chip whose output pin on a D rail is high
     const who = new Set(), v = s.v; const { P } = require('../cards/parts.js');
@@ -325,6 +489,28 @@ else if (WHICH === 'traps') { n = 1; ok += runOne(TRAPS, 'traps', { ...trapOpts,
 else if (WHICH === 'trapsrandom') for (let p = 0; p < NPROG; p++) { n++; const g = genTraps(); if (runOne(g.src, `traps ${p}${g.user ? ' (user mode)' : ''}`, g.opts)) ok++; else { console.log(g.src); break; } }
 else if (WHICH === 'poop') { n = 1; ok += runOne(POOP, 'POOP OK', { io: true, cap: 20000 }); }
 else if (WHICH === 'console') { n = 1; ok += runOne(CONSOLE, 'console', { io: true, cap: 60000 }); }
+else if (WHICH === 'timer') { n = 1;
+  const fires = [], pulses = [], edges = []; let tickSlots = 0, firstTick = null, mmRef = null;
+  const opts = { io: true, timer: true, cap: 60000,
+    preload: sym => [[VBR + 21, sym.TISR], [VBR + 22, 0], [VBR + 23, 0]],
+    timer: (mm) => { mmRef = mm; mm.io.timer.rtc0 = RTC0; const rtc = chip.get('IO.U58'); rtc.a = RTC0 % 65536; rtc.b = Math.floor(RTC0 / 65536); rtc.r = 0;
+      for (const c of m.chips) if (c.part === 'CD4060') c.q = 0; },
+    onSlot: (hi, lo, g, last) => { const clk = mmRef.io.clk;
+      if (clk.r0 === null && hi.get('RESET') === 0 && lo.get('RESET') === 0) clk.r0 = g;
+      if (lo.get('IO:TICK') === 1) { tickSlots++; if (firstTick === null) firstTick = g; }
+      if (lo.get('IO:TC4') === 1 && lo.get('IO:TICK') === 1) fires.push(g);
+      if (last) { edges.push(g); if (lo.get('IRQSET0') === 1) pulses.push(g); } },
+    finish: (mm) => { const tm = mm.io.timer, r0 = mm.io.clk.r0;
+      if (firstTick !== r0 + 199) return `first TICK at slot ${firstTick}, expected r0 + 199 = ${r0 + 199}`;
+      if (tm.fires.length !== fires.length || tm.fires.some((t, i) => t !== fires[i])) { const i = tm.fires.findIndex((t, j) => t !== fires[j]);
+        return `timer firings differ at #${i}: model ${tm.fires.slice(i, i + 3)} vs machine ${fires.slice(i, i + 3)} (${tm.fires.length}/${fires.length})`; }
+      let k = 0; const want = []; for (const t of fires) { while (k < edges.length && edges[k] < t + 1) k++; if (k < edges.length && want[want.length - 1] !== edges[k]) want.push(edges[k]); }
+      if (want.length !== pulses.length || want.some((p, i) => p !== pulses[i])) return `IRQSET0 pulses: expected ${want.length} at the first edge after each firing, got ${pulses.length}`;
+      const word = a => mm.mem[a] + 19683 * mm.mem[a + 1] + 19683 * 19683 * mm.mem[a + 2]; let found = false;
+      for (let i = 0; i < 24; i += 6) if (word(RING + i) === tm.snapT && word(RING + i + 3) === tm.snapR) found = true;
+      if (!found) return `the CPU's assembled values don't include the last snapshot (${tm.snapT}, ${tm.snapR})`;
+      console.log(`  timer: r0 slot ${r0}, ${tickSlots} TICK slots, ${fires.length} firings = model's, ${pulses.length} IRQSET0 pulses (one per firing, first edge after), ${mm.mem[TCOUNT]} timer interrupts taken; last snapshot ticks ${tm.snapT}, RTC ${tm.snapR.toString(16)} (counted ${tm.snapR - RTC0})`); } };
+  ok += runOne(TIMER, 'timer', opts); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);

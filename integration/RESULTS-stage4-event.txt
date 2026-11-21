@@ -1,0 +1,109 @@
+# Whole-machine regression on the event-driven settle, the halt latch and the corrected '161/'74 models (Kehai Interim, 2026-11-21).
+# Output of integration/regress-stage4.sh, trimmed of per-microcycle trace lines. Default settle (event).
+
+## node integration/program-lockstep.js directed
+directed: 57 instructions, 740 microcycles, 12 s: match
+program-lockstep: 1/1 programs match
+## node integration/program-lockstep.js random 12
+random 0: 4 instructions, 20 microcycles, 0 s: match
+random 1: 27 instructions, 209 microcycles, 3 s: match
+random 2: 12 instructions, 72 microcycles, 1 s: match
+random 3: 39 instructions, 665 microcycles, 10 s: match
+random 4: 35 instructions, 428 microcycles, 7 s: match
+random 5: 31 instructions, 399 microcycles, 6 s: match
+random 6: 10 instructions, 67 microcycles, 1 s: match
+random 7: 13 instructions, 131 microcycles, 2 s: match
+random 8: 31 instructions, 555 microcycles, 9 s: match
+random 9: 20 instructions, 214 microcycles, 3 s: match
+random 10: 25 instructions, 201 microcycles, 3 s: match
+random 11: 17 instructions, 114 microcycles, 2 s: match
+program-lockstep: 12/12 programs match
+## node integration/program-lockstep.js traps
+  traps taken: ECAUSE 7, final PRIV 0, halted true
+traps: 90 instructions, 727 microcycles, 12 s: match
+program-lockstep: 1/1 programs match
+## node integration/program-lockstep.js trapsrandom 8
+traps 0: 23 instructions, 124 microcycles, 2 s: match
+traps 1 (user mode): 293 instructions, 2500 microcycles, 41 s: match (ran to the cap)
+traps 2 (user mode): 292 instructions, 2500 microcycles, 47 s: match (ran to the cap)
+traps 3 (user mode): 66 instructions, 657 microcycles, 11 s: match
+traps 4 (user mode): 289 instructions, 2500 microcycles, 43 s: match (ran to the cap)
+traps 5: 30 instructions, 171 microcycles, 4 s: match
+traps 6: 53 instructions, 993 microcycles, 21 s: match
+traps 7 (user mode): 75 instructions, 1101 microcycles, 19 s: match
+program-lockstep: 8/8 programs match
+## node integration/program-lockstep.js timer
+  terminal: "" (0 bytes, 0 framing errors); the CPU waited 0 microcycles on IORDY
+  timer: r0 slot 8, 631 TICK slots, 80 firings = model's, 80 IRQSET0 pulses (one per firing, first edge after), 26 timer interrupts taken; last snapshot ticks 605, RTC 12350002 (counted 4)
+timer: 2411 instructions, 28355 microcycles, 478 s: match
+program-lockstep: 1/1 programs match
+## mutants (each must fail)
+### ALU:CARRY_SKIP (directed)
+directed: 16 instructions, 165 microcycles, 3 s: FAIL at microcycle 165 (instruction 16): bus 290737593 vs 290560446
+program-lockstep: 0/1 programs match
+### ALU:RAILS_SWAPPED_R7 (directed)
+directed: 1 instructions, 6 microcycles, 0 s: FAIL at microcycle 6 (instruction 0): bus 195626 vs 200000
+program-lockstep: 0/1 programs match
+### Registers:SLOT_BITS_SWAPPED (directed)
+directed: 1 instructions, 6 microcycles, 0 s: FAIL at microcycle 6 (instruction 1): register slot 9: 0 vs 200000
+program-lockstep: 0/1 programs match
+### Memory:CHUNK_OFF_BY_ONE (directed)
+directed: 21 instructions, 313 microcycles, 6 s: FAIL at microcycle 313 (instruction 21): bus 0 vs 2
+program-lockstep: 0/1 programs match
+### Memory:MDR_LANE_RAILS (directed)
+directed: 3 instructions, 16 microcycles, 0 s: FAIL at microcycle 16 (instruction 2): bus 193670878 vs 193710244
+program-lockstep: 0/1 programs match
+### Control:PC_CARRY_SKIP (directed)
+directed: 8 instructions, 46 microcycles, 1 s: FAIL at microcycle 45 (instruction 8): PC 743 vs 14
+program-lockstep: 0/1 programs match
+### Control:COND_IGNORED (directed)
+directed: 16 instructions, 234 microcycles, 3 s: FAIL at microcycle 234 (instruction 16): UA 244 vs next 251
+program-lockstep: 0/1 programs match
+### Control:DISPATCH_BIT_SWAP (directed)
+directed: 1 instructions, 9 microcycles, 0 s: FAIL at microcycle 9 (instruction 1): UA 5 vs next 6
+program-lockstep: 0/1 programs match
+### Control:NO_RESET_VECTOR (directed)
+directed: 0 instructions, 1 microcycles, 0 s: FAIL at microcycle 1 (instruction 0): UPC 0 vs upc 535
+program-lockstep: 0/1 programs match
+### clockgen:HALT_IGNORED (directed)
+directed: 57 instructions, 740 microcycles, 12 s: FAIL at microcycle 740 (instruction 57): halted at micro-address 1, the microsim at 0
+program-lockstep: 0/1 programs match
+### Control:TRAP_BAD_WIRED_WRONG (traps)
+traps: 17 instructions, 116 microcycles, 1 s: FAIL at microcycle 116 (instruction 17): UA 436 vs next 435
+program-lockstep: 0/1 programs match
+### Control:PSW_ENTER_IGNORED (traps)
+traps: 54 instructions, 404 microcycles, 7 s: FAIL at microcycle 404 (instruction 54): PRIV 1 vs 0
+program-lockstep: 0/1 programs match
+### Memory:WRITE_NOT_BLOCKED (traps)
+traps: 62 instructions, 473 microcycles, 7 s: FAIL at microcycle 473 (instruction 62): chip Memory.U240 wrote address 7000, which the microsim did not write
+program-lockstep: 0/1 programs match
+### Memory:FK_INVERTED (traps)
+traps: 17 instructions, 116 microcycles, 2 s: FAIL at microcycle 116 (instruction 17): UA 430 vs next 435
+program-lockstep: 0/1 programs match
+### Memory:CHK3_USES_SINGLE (traps)
+traps: 68 instructions, 516 microcycles, 8 s: FAIL at microcycle 516 (instruction 68): UA 98 vs next 430
+program-lockstep: 0/1 programs match
+### Registers:ABORT_IGNORED (traps)
+traps: 54 instructions, 396 microcycles, 6 s: FAIL at microcycle 396 (instruction 54): bus 6001 vs 5998
+program-lockstep: 0/1 programs match
+### ALU:ESRV_PRIV_IE_SWAPPED (traps)
+traps: 54 instructions, 398 microcycles, 6 s: FAIL at microcycle 398 (instruction 54): bus 82 vs 28
+program-lockstep: 0/1 programs match
+### Memory:MAR_IGNORES_ABORT (traps)
+traps: 90 instructions, 727 microcycles, 12 s: match
+program-lockstep: 1/1 programs match
+### IO:CON_NO_STALL (poop)
+POOP OK: 20 instructions, 110 microcycles, 34 s: FAIL at microcycle 110 (instruction 20): terminal received "\u0014", the microsim printed "POOP OK\r\n"
+program-lockstep: 0/1 programs match
+### clockgen:HALT_IGNORED (console)
+console: 323 instructions, 38309 microcycles, 565 s: FAIL at microcycle 38309 (instruction 323): halted at micro-address 1, the microsim at 0
+program-lockstep: 0/1 programs match
+## node integration/program-lockstep.js poop
+  terminal: "POOP OK\r\n" (9 bytes, 0 framing errors); the CPU waited 7803 microcycles on IORDY
+POOP OK: 20 instructions, 7913 microcycles, 130 s: match
+program-lockstep: 1/1 programs match
+## node integration/program-lockstep.js console
+  terminal: "POOP OK\r\n0 7 -1 42 -9841 1234567 " (33 bytes, 0 framing errors); the CPU waited 28611 microcycles on IORDY
+console: 323 instructions, 38309 microcycles, 584 s: match
+program-lockstep: 1/1 programs match
+DONE

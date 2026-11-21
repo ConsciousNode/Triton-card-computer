@@ -1,0 +1,122 @@
+# JPUSB cross-check results (Kehai Interim, 2026-11-21). Raw output of crosscheck.js, min corner, against Bare-USB delivery-11.
+
+## hid, write path: fix
+  BD's combinational cone: 32 nets (TX_PAY_D0 TX_PAY_D1 TX_PAY_D2 TX_PAY_D3 TX_PAY_D4 TX_PAY_D5 TX_PAY_D6 TX_PAY_D7 TX_LAT_DIN0 TX_LAT_DIN1 ...)
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 89 s
+  134,348 edges, 129,382 compared x 1108 shared nets, 4,966 skipped (within 40 ns of an async change); 409,180 settles on our side
+  BD not compared at 83 edges in buffer write windows (finding 1's fix; WRITEPATH=neon for Neon's drawing)
+  mismatches: 0
+  floating in our model at a compare (Neon holds the last value): 8 nets FL_D0 x129381, FL_D1 x129381, FL_D2 x129381, FL_D3 x129381, FL_D4 x129381, FL_D5 x129381, FL_D6 x129381, FL_D7 x129381
+  clocked reads of a floating net: 0 
+  FSM addresses visited (Neon's side): 162; Test 6's pick: 0x82
+
+## msc, write path: fix
+  BD's combinational cone: 32 nets (TX_PAY_D0 TX_PAY_D1 TX_PAY_D2 TX_PAY_D3 TX_PAY_D4 TX_PAY_D5 TX_PAY_D6 TX_PAY_D7 TX_LAT_DIN0 TX_LAT_DIN1 ...)
+JPUSB cross-check (msc, min corner): Neon's workload {"enumerated":true,"sector":true}; 4.490 ms simulated in 155 s
+  215,506 edges, 205,065 compared x 1108 shared nets, 10,441 skipped (within 40 ns of an async change); 661,737 settles on our side
+  BD not compared at 595 edges in buffer write windows (finding 1's fix; WRITEPATH=neon for Neon's drawing)
+  mismatches: 0
+  floating in our model at a compare (Neon holds the last value): 8 nets FL_D0 x205064, FL_D1 x205064, FL_D2 x205064, FL_D3 x205064, FL_D4 x205064, FL_D5 x205064, FL_D6 x205064, FL_D7 x205064
+  clocked reads of a floating net: 0 
+  FSM addresses visited (Neon's side): 194; Test 6's pick: 0x82
+
+## hid, write path: neon
+  BD's combinational cone: 32 nets (TX_PAY_D0 TX_PAY_D1 TX_PAY_D2 TX_PAY_D3 TX_PAY_D4 TX_PAY_D5 TX_PAY_D6 TX_PAY_D7 TX_LAT_DIN0 TX_LAT_DIN1 ...)
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 94 s
+  134,348 edges, 129,382 compared x 1125 shared nets, 4,966 skipped (within 40 ns of an async change); 409,428 settles on our side
+  BD not compared at 0 edges in buffer write windows (finding 1's fix; WRITEPATH=neon for Neon's drawing)
+  mismatches: 0
+  floating in our model at a compare (Neon holds the last value): 8 nets FL_D0 x129381, FL_D1 x129381, FL_D2 x129381, FL_D3 x129381, FL_D4 x129381, FL_D5 x129381, FL_D6 x129381, FL_D7 x129381
+  clocked reads of a floating net: 0 
+  FSM addresses visited (Neon's side): 162; Test 6's pick: 0x82
+
+## msc, write path: neon
+  BD's combinational cone: 32 nets (TX_PAY_D0 TX_PAY_D1 TX_PAY_D2 TX_PAY_D3 TX_PAY_D4 TX_PAY_D5 TX_PAY_D6 TX_PAY_D7 TX_LAT_DIN0 TX_LAT_DIN1 ...)
+JPUSB cross-check (msc, min corner): Neon's workload {"enumerated":true,"sector":true}; 4.490 ms simulated in 169 s
+  215,506 edges, 205,065 compared x 1125 shared nets, 10,441 skipped (within 40 ns of an async change); 663,069 settles on our side
+  BD not compared at 0 edges in buffer write windows (finding 1's fix; WRITEPATH=neon for Neon's drawing)
+  mismatches: 0
+  floating in our model at a compare (Neon holds the last value): 8 nets FL_D0 x205064, FL_D1 x205064, FL_D2 x205064, FL_D3 x205064, FL_D4 x205064, FL_D5 x205064, FL_D6 x205064, FL_D7 x205064
+  clocked reads of a floating net: 0 
+  FSM addresses visited (Neon's side): 194; Test 6's pick: 0x82
+
+## positive controls (WRITEPATH=neon, our side only; each must show mismatches or stop), keyboard
+### old161
+### swap574
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 11 s
+  mismatches: 27; STOPPED: too many mismatches
+    t=102874.17 ns edge 4938: CRC16_DIN1 ours 0 Neon 1
+### neon:auto_ack_late
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 18 s
+  mismatches: 22; STOPPED: too many mismatches
+    t=324811.67 ns edge 15591: AUTO_ACK_FIRE ours 0 Neon 1
+### neon:bit_stuff_off_by_one
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 25 s
+  mismatches: 27; STOPPED: too many mismatches
+    t=624540.83 ns edge 29978: STUFF_TRIG_RAW ours 1 Neon 0
+### neon:buf_addr_carry_broken
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 94 s
+  mismatches: 0
+### neon:crc16_tap_moved
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 11 s
+  mismatches: 21; STOPPED: too many mismatches
+    t=102853.33 ns edge 4937: CRC16_D2 ours 1 Neon 0
+### neon:dpll_resync_disabled
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 11 s
+  mismatches: 22; STOPPED: too many mismatches
+    t=100999.17 ns edge 4848: DPLL_Q0 ours 1 Neon 0
+### neon:enable_spacing_too_short
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 85 s
+  mismatches: 0
+### neon:false_path_violated
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 12 s
+  mismatches: 25; STOPPED: too many mismatches
+    t=136145.00 ns edge 6535: RX_WE_PULSE ours 1 Neon 0
+### neon:fsm_bad_next_state
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 85 s
+  mismatches: 0
+### neon:mcp_endpoint_captures_off_enable
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 8 s
+  mismatches: 24; STOPPED: too many mismatches
+    t=145.00 ns edge 7: RX_SR_D6 ours 1 Neon 0
+### neon:mcp_source_changes_off_enable
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 11 s
+  mismatches: 21; STOPPED: too many mismatches
+    t=101040.83 ns edge 4850: FSM_DIN0 ours 1 Neon 0
+### neon:nrzi_rx_inverted
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 8 s
+  mismatches: 24; STOPPED: too many mismatches
+    t=82.50 ns edge 4: NRZI_RX_BIT_RAW ours 0 Neon 1
+### neon:reg_dec_swapped
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 9 s
+  mismatches: 24; STOPPED: too many mismatches
+    t=10270.00 ns edge 493: BUS_D5 ours 0 Neon 1
+### neon:sof_missing
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 45 s
+  mismatches: 27; STOPPED: too many mismatches
+    t=1365436.67 ns edge 65541: SOF_TRIG_OUT ours 0 Neon 1
+### neon:turnaround_short
+JPUSB cross-check (hid, min corner): Neon's workload {"enumerated":true,"keys":1}; 2.799 ms simulated in 12 s
+  mismatches: 38; STOPPED: too many mismatches
+    t=192811.67 ns edge 9255: ERR_TO_NXT ours 1 Neon 0
+### neon:undriven_net_mutant
+DONE
+
+## positive controls, mass storage
+### neon:buf_addr_carry_broken (msc)
+JPUSB cross-check (msc, min corner): Neon's workload {"enumerated":true,"sector":true}; 4.490 ms simulated in 38 s
+  mismatches: 32; STOPPED: too many mismatches
+    t=745478.33 ns edge 35783: BA4 ours 0 Neon 1
+### neon:fsm_bad_next_state (msc)
+JPUSB cross-check (msc, min corner): Neon's workload {"enumerated":true,"sector":true}; 4.490 ms simulated in 19 s
+  mismatches: 103; STOPPED: too many mismatches
+    t=102353.33 ns edge 4913: NXT_S0_RAW ours 0 Neon 1
+### neon:enable_spacing_too_short (msc)
+JPUSB cross-check (msc, min corner): Neon's workload {"enumerated":true,"sector":true}; 4.490 ms simulated in 16 s
+  mismatches: 21; STOPPED: too many mismatches
+    t=20353.33 ns edge 977: RX_SAMPLE_EN_PRE_G ours 1 Neon 0
+DONE
+
+## old161 (rerun after the harness's clock-pin table learned the renamed part)
+  mismatches: 24; STOPPED: too many mismatches; first: t=100999.17 ns edge 4848: BA2 ours 1 Neon 0
+## undriven_net_mutant: our side stops at the first settle: U150_TX_LAT_CLK_AND.2B: net SE0_PREV_N undriven

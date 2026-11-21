@@ -1,13 +1,13 @@
 // clockgen-test.js: the clock and reset generator against an independent oracle (Kehai Interim, 2026-11-20). MIT.
 // Steps half-slots (SCLK high, SCLK low). On each step every flip-flop half whose own clock net rose is clocked with
 // the values settled just before that edge (so CLK and SCLK rising together both see pre-edge data).
-// Checks: /CEDGE low exactly one slot per CPU cycle (4 slots, 8 when STRETCH); /WSTB low exactly in the slot before it; CLK rises only at the end of a /CEDGE
+// Checks: HALT stops CLK until a reset (2026-11-21); /CEDGE low exactly one slot per CPU cycle (4 slots, 8 when STRETCH); /WSTB low exactly in the slot before it; CLK rises only at the end of a /CEDGE
 // slot and is high only during the SCLK-high half right after it (no glitches); RESET asserts at once on POR or LOAD and
 // releases on exactly the 2nd CPU edge after both drop; the slot counter locks from all 16 power-up states; every
 // mutant in clockgen.MUTANTS is caught. Usage: node clockgen-test.js [all|mutants]
 'use strict';
 const { Card } = require('./netlist.js'); const { P } = require('./parts.js'); const G = require('./clockgen.js');
-function make(mutant, q0 = 0) { const c = G.build(new Card('clockgen'), { mutant }); c.check();
+function make(mutant, q0 = 0) { const c = G.build(new Card('clockgen'), { mutant }); c.input('HALTED'); c.check();
   for (const ch of c.chips) if (ch.part === 'LVC74') ch.q = [0, 0, 0]; c.chips.find(ch => ch.ref === 'U200').q = q0; return c; }
 const CLOCK_PINS = { LVC74: ['1CLK', '2CLK'], LVC161: ['CP'] };
 // one half-step: set SCLK, find the clock nets that rose, clock exactly those flops with pre-edge values, settle
@@ -22,14 +22,16 @@ function step(c, w, sclk) {
   return c.settle(w);
 }
 // run n slots; stretchFor(cycleIndex) gives STRETCH for that CPU cycle; reset schedule: { por: [from, to), load: [from, to) } in slots
-function run(mutant, { slots = 400, stretchFor = () => 0, por = null, load = null, q0 = 0 } = {}) {
-  const c = make(mutant, q0); const w = new Map([['SCLK', 0], ['POR', 0], ['LOAD', 0], ['STRETCH', 0]]);
+function run(mutant, { slots = 400, stretchFor = () => 0, por = null, load = null, q0 = 0, haltCyc = -1 } = {}) {
+  const c = make(mutant, q0); const w = new Map([['SCLK', 0], ['POR', 0], ['LOAD', 0], ['STRETCH', 0], ['HALTED', 0]]);
   const tr = []; let cyc = 0;
   for (let s = 0; s < slots; s++) {
     w.set('POR', por && s >= por[0] && s < por[1] ? 1 : 0); w.set('LOAD', load && s >= load[0] && s < load[1] ? 1 : 0);
     w.set('STRETCH', stretchFor(cyc) ? 1 : 0);
-    const hi = step(c, w, 1); const lo = step(c, w, 0);
-    const rec = { s, wstbHi: hi.get('/WSTB'), wstbLo: lo.get('/WSTB'), cedgeN: hi.get('/CEDGE'), clkHi: hi.get('CLK'), clkLo: lo.get('CLK'), resetHi: hi.get('RESET'), resetLo: lo.get('RESET'), stretch: w.get('STRETCH'), por: w.get('POR'), load: w.get('LOAD') };
+    // HALTED: through one whole CPU cycle, changing just after the edge that starts it (U29 decodes the pipeline
+    // register, which loads the HALT word at that edge), so it is set before the edge that ends it, never before the first
+    const hi = step(c, w, 1); w.set('HALTED', cyc === haltCyc ? 1 : 0); const lo = step(c, w, 0);
+    const rec = { s, wstbHi: hi.get('/WSTB'), wstbLo: lo.get('/WSTB'), cedgeN: hi.get('/CEDGE'), clkHi: hi.get('CLK'), clkLo: lo.get('CLK'), resetHi: hi.get('RESET'), resetLo: lo.get('RESET'), stretch: w.get('STRETCH'), por: w.get('POR'), load: w.get('LOAD'), halted: w.get('HALTED') };
     tr.push(rec); if (rec.cedgeN === 0) cyc++;
   }
   return tr;
@@ -65,7 +67,20 @@ const cases = [
   ['copy-engine LOAD holds reset', { slots: 300, por: [0, 10], load: [5, 151] }],
   ['reset button mid-run', { slots: 300, por: [120, 133] }],
   ...[...Array(16).keys()].map(q => [`locks from counter state ${q}`, { slots: 80, q0: q, stretchFor: k => k % 2 }])];
-function suite(mutant) { const fails = []; for (const [name, opt] of cases) { const b = judge(run(mutant, opt)); if (b.length) fails.push(`${name}: ${b[0]}`); } return fails; }
+// THE HALT LATCH (2026-11-21): HALTED high through one CPU cycle; at the edge that ends it the latch sets, and CLK must
+// not rise again (while SCLK and /CEDGE keep going) until a reset; after the reset CLK runs again
+function judgeHalt(tr) { const bad = [];
+  const hs = tr.filter(r => r.halted).map(r => r.s); if (!hs.length) return ['no HALTED cycle in the run'];
+  const endEdge = tr.find(r => r.s > hs[hs.length - 1] && r.clkHi === 1);   // the CPU edge that ends the HALT word
+  if (!endEdge) return ['no CPU edge after HALTED'];
+  const por0 = tr.find(r => r.s > endEdge.s && r.por); if (!por0) return ['no reset after the halt'];
+  const after = tr.filter(r => r.s > endEdge.s && r.s < por0.s);
+  if (after.some(r => r.clkHi === 1 || r.clkLo === 1)) bad.push(`CLK rose at slot ${after.find(r => r.clkHi === 1 || r.clkLo === 1).s} while halted`);
+  if (!after.some(r => r.cedgeN === 0)) bad.push('/CEDGE stopped too (only CLK should)');
+  if (!tr.some(r => r.s > por0.s && !r.por && r.clkHi === 1)) bad.push('CLK did not resume after the reset');
+  return bad; }
+cases.push(['HALT stops CLK until a reset', { slots: 300, haltCyc: 10, por: [180, 190] }, judgeHalt]);
+function suite(mutant) { const fails = []; for (const [name, opt, j] of cases) { const b = (j || judge)(run(mutant, opt)); if (b.length) fails.push(`${name}: ${b[0]}`); } return fails; }
 const which = process.argv[2] || 'all';
 let ok = true;
 if (which === 'all' || which === 'base') { const f = suite(null);

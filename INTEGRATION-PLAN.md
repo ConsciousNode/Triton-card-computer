@@ -166,8 +166,84 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **POOP OK: 872 s, down from 2,279 s (2.6×).**
   - The rest of the time is still full passes over 664 chips. The next step is event-driven settling (re-evaluate
     only chips whose inputs changed), guarded by the same check mode.
-- **Next:** the rest of stage 3 part 2 (the PRNUM console workload, SD, PS/2, timer, video ports); event-driven settle (I/O programs, traps, IRQs), stage 4 (simulator speed),
-  and the POOP OK boot.
+- **Stage 4, step 2: the event-driven settle (2026-11-21, afternoon).** `Card.settleEvent` (netlist.js), now the
+  default.
+  - **How it works:** it keeps every net's value between calls and re-evaluates only the chips that could have
+    changed. That means every chip with state (flip-flops, counters, edge-counted parts, SRAMs whose /WE isn't tied to
+    VCC), plus every chip reading a net whose value changed. Each driven pin keeps its last contribution, and a net is
+    resolved from its drivers the way one settled pass of settleFast resolves it.
+  - **Errors:** any error (an undriven read, a bus fight, weak contention, no settling) restores the async state and
+    hands the call to settleFast, so error messages are word for word what they were.
+  - **Declared:** a table SRAM with /WE tied to VCC only changes before the first settle (or the caller calls
+    `invalidate()`).
+  - **Modes:** `SETTLE=check` runs event and fast on every call and throws on any difference; `SETTLE=checkslow` is
+    the old fast-vs-slow check; `SETTLE=fast` and `SETTLE=slow` run one engine.
+  - **Checked (`SETTLE=check`, every settle compared):** the directed program, the trap program, 6 random programs
+    and 1 random trap program: 0 differences.
+  - **Positive control:** `EVENT_MUTANT=no-stateful` (skip the stateful chips) throws at the first call under check.
+    The same mutant still passes plain lockstep, because clocked chips get re-evaluated through their clock net
+    anyway. So lockstep alone can't vouch for a settle engine; check mode can.
+  - **Speed: POOP OK in 92 s, down from 872 s (9.5×) and from the original 2,279 s (24×).** The directed program
+    takes 7 s, down from 48 s.
+- **Stage 3 part 2: the timer, the RTC and timer interrupts on the whole machine (2026-11-21)** (`program-lockstep.js
+  timer`).
+  - **The program:** the I/O card's own timer workload, lifted unchanged. The microsim's timer model runs on the
+    machine's real slot clock: an OUT happens at the edge of the cycle just run, and an instruction boundary is the
+    edge before it, as the card harness has it.
+  - **Result:** 2,411 instructions and 28,355 microcycles in lockstep.
+    - 80 timer firings, slot for slot the model's;
+    - 80 IRQSET0 pulses, each at the first CPU edge after its firing;
+    - 26 timer interrupts taken by the real Control card's pending latch and microcode;
+    - the CPU's own assembly of the snapshot bytes matches (RTC counted 4).
+  - **One harness fix:** the microsim only ticks its devices in `step()`, which this harness doesn't call. Without
+    the boundary tick the model never raised its IRQ, and the whole machine, correctly, took one the microsim didn't.
+- **FINDING 5: HALT didn't halt (fixed 2026-11-21).**
+  - **The bug:** Control's next-address table has always made HALTED, but nothing read it, so on the whole machine
+    HALT went on to FETCH and ran the next instruction. Every earlier program passed because lockstep stops when the
+    microsim halts. POOP OK passed because only empty RAM followed its HALT. The console workload has PRNUM after its
+    HALT, and the terminal received "32P".
+  - **Fix:** a halt latch on the clock generator, using only spare gates: U206's spare half, U203 gate 3, U207 gate 2
+    and U201 inverter 6. It captures HALTED | HALTQ on CLK and gates CEN's D input, so CLK stops at FETCH, where the
+    microsim's HALT parks. RESET clears it at once, so the KERK panel's button restarts the machine. Interrupts don't
+    wake it (Kham may choose otherwise; it's one gate either way).
+  - **Tests:**
+    - clockgen-test has a halt case (23/23), and HALT_IGNORED is caught (9/9 mutants);
+    - every whole-machine run now checks, after HALT, that the machine parks at the microsim's micro-address and that
+      the PC and micro-address stay put with no main-RAM or register-RAM write for 64 slots. The Video card's scan-out
+      keeps writing its line buffer, as it should;
+    - clockgen:HALT_IGNORED fails the directed program.
+- **Part models corrected (2026-11-21, found by the JPUSB cross-check):** the 74LVC161's MR and the 74LVC74's /CLR and
+  /PRE are asynchronous. The models only overrode the outputs while those pins were low, and the old state came back
+  when they released. Both now have an async hook. The card computer never showed it, because its clocks run through
+  every reset.
+- **Everything rerun on the event settle and the corrected models (2026-11-21):**
+  - **Whole machine** (`integration/RESULTS-stage4-event.txt`): directed, random 12, traps, trapsrandom 8, timer,
+    POOP OK and console all match. Every mutant is caught, except MAR_IGNORES_ABORT, which survives as before (the
+    Memory card's own test catches it).
+  - **Card tests** (RESULTS-*.jsonl, appended), 0 mismatches each:
+    - clockgen 23/23 cases, 9/9 mutants;
+    - ALU random 1,867,511 µcycles; Registers, Memory and Control random 300,000 each;
+    - Control directed, irqbm, spr and fetchfault;
+    - Video directed;
+    - I/O ports drivers, ports, console and timer.
+    Load-sim (all five cards' tables) and power-up-sim (811,347 engine clocks, DONE rose) pass.
+  - **One harness item, not hardware:** `io-ports-test.js all` (the four workloads in one process, never run before
+    today) reports the timer's firings differ. The card fires at slot 10,607 exactly as when the timer workload runs
+    alone (0 mismatches, first firing 10,607 in both card and model). It's the model side that drifts to 275,207 in
+    `all` mode: state carried between workloads in the harness. Run the workloads one at a time until it's fixed.
+- **JPUSB step 1 done: the translation, proven against Neon's simulator** (`jpusb/`, see `jpusb/JPUSB.md`).
+  - 257 chips in the library.
+  - Neon's own simulator and the translation are compared on every shared net before every 48 MHz edge: keyboard
+    134,348 edges, mass storage 215,506, 0 mismatches. 17/17 positive controls caught.
+  - Findings:
+    - the packet buffer used model-only SRAM pins; fixed with '257s, no new chips;
+    - two buses were read while floating; fixed with LVCH245 bus-hold;
+    - the library's '161/'74 bug above.
+  - The write path's timing is Neon's Round 12.
+- **Next:**
+  - the rest of stage 3 part 2: SD and PS/2 on the whole machine, and the video ports;
+  - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
+  - after that, the KERK panel.
 
 ## Stage 1: compose the cards
 - `integrate.js` builds each card's netlist and merges them into one. Local nets get the card's prefix (`IO:BUSY`); the
