@@ -1,5 +1,5 @@
-# Backplane check (integration stage 0), generated 2026-11-20T14:33:53.427Z
-Cards: ALU 96, Control 122, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 112.
+# Backplane check (integration stage 0), generated 2026-11-21T03:24:13.984Z
+Cards: ALU 97, Control 124, Registers 20, Memory 251, Video 102, IO 70. Backplane signals: 112.
 
 | signal | ALU | Control | Registers | Memory | Video | IO | note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -71,7 +71,7 @@ Cards: ALU 96, Control 122, Registers 20, Memory 251, Video 102, IO 70. Backplan
 | SCLK |  | r |  | r | r | r | driven by the 40 MHz oscillator can on the Control card (world part) |
 | RESET | r | D:strong r | r | r | r | r |  |
 | /CEDGE |  | D:strong r |  |  | r | r |  |
-| STRETCH |  | D:weak r |  |  |  |  |  |
+| STRETCH | D:strong | D:weak r |  |  |  |  |  |
 | ABORT | r | r | r | D:tri r |  |  |  |
 | FK |  | r |  | D:tri |  |  |  |
 | SPRNR |  | D:tri r | r | r |  |  |  |
@@ -87,7 +87,7 @@ Cards: ALU 96, Control 122, Registers 20, Memory 251, Video 102, IO 70. Backplan
 | QT+ | D:strong r | r |  |  |  |  |  |
 | QT- | D:strong r | r |  |  |  |  |  |
 | BTOPNZ | D:strong | r |  |  |  |  |  |
-| DIV0 |  |  |  |  |  |  | no card uses it |
+| /WSTB |  | D:strong | r | r |  |  |  |
 | BADADDR |  | r |  | D:tri |  |  |  |
 | PROT |  |  |  |  |  |  | no card uses it |
 | IORDY |  | r |  |  |  | D:od/weak |  |
@@ -119,7 +119,7 @@ Cards: ALU 96, Control 122, Registers 20, Memory 251, Video 102, IO 70. Backplan
 ## Summary
 - Nobody drives (0): none
 - Always-on drivers on two cards (0): none
-- No card uses (9): LOAD_WE, LOAD_SEL0, LOAD_SEL1, LOAD_SEL2, DIV0, PROT, FP_RUN, FP_STEP, FP_STEPMODE
+- No card uses (8): LOAD_WE, LOAD_SEL0, LOAD_SEL1, LOAD_SEL2, PROT, FP_RUN, FP_STEP, FP_STEPMODE
 
 ## Per card: inputs its harness supplies that aren't backplane signals
 - **ALU** (2): GND, VCC

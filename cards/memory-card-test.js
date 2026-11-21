@@ -16,6 +16,8 @@
 //     change the microsim's memory directly; the harness finds those changes on I/O cycles and copies them into the
 //     card's chips, counted under "sync" in the coverage.
 'use strict';
+// /WSTB (2026-11-20): the backplane write strobe. This harness writes at the edge with settled values, so it holds the
+// strobe active (low); its timing is checked on the whole machine (integration/timing-sim.js).
 const fs = require('fs'), path = require('path');
 const { build, cardWord, FB_BASE, FB_SIZE, rowsFor } = require('./memory-card.js');
 const { rails, trit } = require('./netlist.js');
@@ -86,7 +88,7 @@ proto.cycle = function () {
     for (let x = 0; x < this.ramSize; x++) if (this.mem[x]) ramPut(x, this.mem[x]);
     for (let p = 0; p < FB_SIZE; p++) if (this.vram[p]) vPut(p, this.vram[p]);
     shadow = Int16Array.from(this.mem); vshadow = Int16Array.from(this.vram); lastPix = -1;
-    const w0 = new Map([['CLK', 0], ['RESET', 1], ['MODE', 0], ['PRIV', 0], ['PROTEN', 0], ['SPRNR', 0], ['/SWR', 1], ['SCLK', 0]]);
+    const w0 = new Map([['CLK', 0], ['/WSTB', 0], ['RESET', 1], ['MODE', 0], ['PRIV', 0], ['PROTEN', 0], ['SPRNR', 0], ['/SWR', 1], ['SCLK', 0]]);
     for (let i = 0; i < 5; i++) w0.set(`RSLOT${i}`, 0); for (let i = 0; i < 10; i++) w0.set(`UA${i}`, (this.upc >> i) & 1);
     for (let i = 0; i < 19; i++) w0.set(`SA${i}`, 0); for (let i = 0; i < 12; i++) w0.set(`SI${i}`, 0);
     for (let k = 0; k < 27; k++) { w0.set(`D${k}+`, 0); w0.set(`D${k}-`, 0); } card.settle(w0); for (const r of PIPE) P.ALVCH16823.clock(chip(r), p => card.v.get(chip(r).pins[p])); }
@@ -106,7 +108,7 @@ proto.cycle = function () {
   if (mu.IO) { for (let x = 0; x < this.ramSize; x++) if (this.mem[x] !== shadow[x]) { offMem.push(x); shadow[x] = this.mem[x]; }
     for (let p = 0; p < FB_SIZE; p++) if (this.vram[p] !== vshadow[p]) { offFb.push(p); vshadow[p] = this.vram[p]; } }
   const j2 = mu.IO === 'OUT' && d.imm === 4 && offFb.length === 1 && offMem.length === 0 ? offFb.pop() : -1;   // the Video card's pixel write
-  const w = new Map([['CLK', 0], ['RESET', 0], ['MODE', pre.mode], ['PRIV', pre.priv], ['PROTEN', pre.protEn], ['SPRNR', sprnr], ['/SWR', j2 >= 0 ? 0 : 1], ['SCLK', 0]]);
+  const w = new Map([['CLK', 0], ['/WSTB', 0], ['RESET', 0], ['MODE', pre.mode], ['PRIV', pre.priv], ['PROTEN', pre.protEn], ['SPRNR', sprnr], ['/SWR', j2 >= 0 ? 0 : 1], ['SCLK', 0]]);
   for (let i = 0; i < 5; i++) w.set(`RSLOT${i}`, (slot >> i) & 1); for (let i = 0; i < 10; i++) w.set(`UA${i}`, (upc >> i) & 1);
   const sa = fbLoc(j2 >= 0 ? j2 : sp); for (let i = 0; i < 19; i++) w.set(`SA${i}`, (sa >> i) & 1);
   const si = j2 >= 0 ? enc(this.vram[j2], 6) : 0; for (let i = 0; i < 12; i++) w.set(`SI${i}`, (si >> i) & 1);

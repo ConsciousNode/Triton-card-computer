@@ -9,7 +9,7 @@ const T = (k, r) => `${k}${r ? '-' : '+'}`;
 const CW = ['/RD', '/WR'];
 function build(csImage, mutant) {
   const c = new Card('Registers');
-  c.input('CLK', 'RESET', 'ABORT', 'SPRNR', ...[0, 1, 2, 3, 4].map(i => `RSLOT${i}`), ...[...Array(10).keys()].map(i => `UA${i}`));
+  c.input('CLK', 'RESET', 'ABORT', 'SPRNR', '/WSTB', ...[0, 1, 2, 3, 4].map(i => `RSLOT${i}`), ...[...Array(10).keys()].map(i => `UA${i}`));
   for (let k = 0; k < 27; k++) c.input(T(`D${k}`, 0), T(`D${k}`, 1));
   // own control store (2 bits used) + pipeline (574, outputs off in RESET) + pull-ups = "neither read nor write"
   { const pins = { '/CE': 'GND', '/OE': 'GND', '/WE': 'VCC', IO0: 'CSD0', IO1: 'CSD1' }; for (let i = 0; i < 19; i++) pins[`A${i}`] = i < 10 ? `UA${i}` : 'GND';
@@ -18,11 +18,14 @@ function build(csImage, mutant) {
   c.add('RN1', 'RPACK8', { P1: 'CW_/RD', P2: 'CW_/WR' });
   // enables: /RDE = /RD or SPRNR; /WRE = /WR or SPRNR or ABORT; transceivers on when either; DIR = reading
   c.add('U3', 'LVC32', { '1A': 'CW_/RD', '1B': mutant === 'SPRNR_IGNORED' ? 'GND' : 'SPRNR', '1Y': '/RDE', '2A': 'CW_/WR', '2B': mutant === 'SPRNR_IGNORED' ? 'GND' : 'SPRNR', '2Y': '/WRA',
-    '3A': '/WRA', '3B': mutant === 'ABORT_IGNORED' ? 'GND' : 'ABORT', '3Y': '/WRE', '4A': 'GND', '4B': 'GND' });
+    '3A': '/WRA', '3B': mutant === 'ABORT_IGNORED' ? 'GND' : 'ABORT', '3Y': '/WRE', '4A': '/WRE', '4B': '/WSTB', '4Y': '/WEP' });
+  // /WEP (2026-11-20): the RAM's /WE is /WRE gated by the backplane write strobe (one slot, ending 25 ns before the CPU
+  // edge), so the slot address (RSLOT, settled ~16 ns) and the data are still while it writes. Before, /WE was /WRE
+  // itself: low across the CPU edge into the next word (integration/TIMING-GATE-LEVEL.md, finding 1).
   c.add('U4', 'LVC08', { '1A': '/RDE', '1B': '/WRE', '1Y': '/XOE', '2A': 'GND', '2B': 'GND', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
   c.add('U5', 'LVC04', { '1A': '/RDE', '1Y': 'XDIR' });
   // the RAM: 7 chips x 8 bits = 56 >= 54 wires
-  for (let j = 0; j < 7; j++) { const pins = { '/CE': 'GND', '/OE': '/RDE', '/WE': '/WRE' };
+  for (let j = 0; j < 7; j++) { const pins = { '/CE': 'GND', '/OE': '/RDE', '/WE': '/WEP' };
     for (let i = 0; i < 19; i++) pins[`A${i}`] = i < 5 ? (mutant === 'SLOT_BITS_SWAPPED' && i < 2 ? `RSLOT${1 - i}` : `RSLOT${i}`) : 'GND';
     for (let i = 0; i < 8; i++) { const w = 8 * j + i; if (w < 54) pins[`IO${i}`] = T(`M${w >> 1}`, w & 1); }
     c.add(`U${10 + j}`, 'IS61WV5128', pins, { mem: Buffer.alloc(1 << 19) }); }

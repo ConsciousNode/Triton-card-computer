@@ -16,7 +16,7 @@ const FB_BASE = 15000000, FB_SIZE = 354294;
 
 function build(csImages, ramSize, slots, mutant) {
   const c = new Card('Memory');
-  c.input('CLK', 'RESET', 'MODE', 'PRIV', 'PROTEN', 'SPRNR', ...[0, 1, 2, 3, 4].map(i => `RSLOT${i}`), ...[...Array(10).keys()].map(i => `UA${i}`), ...[...Array(19).keys()].map(i => `SA${i}`), ...[...Array(12).keys()].map(i => `SI${i}`), '/SWR', 'SCLK');
+  c.input('CLK', 'RESET', 'MODE', 'PRIV', 'PROTEN', 'SPRNR', '/WSTB', ...[0, 1, 2, 3, 4].map(i => `RSLOT${i}`), ...[...Array(10).keys()].map(i => `UA${i}`), ...[...Array(19).keys()].map(i => `SA${i}`), ...[...Array(12).keys()].map(i => `SI${i}`), '/SWR', 'SCLK');
   for (let k = 0; k < 27; k++) c.input(T(`D${k}`, 0), T(`D${k}`, 1));
   const sram = (ref, addr, data, mem) => { const pins = { '/CE': 'GND', '/OE': 'GND', '/WE': 'VCC' };
     for (let i = 0; i < 19; i++) pins[`A${i}`] = addr[i] || 'GND'; data.forEach((n, i) => { if (n) pins[`IO${i}`] = n; }); c.add(ref, 'IS61WV5128', pins, { mem }); };
@@ -106,8 +106,11 @@ function build(csImages, ramSize, slots, mutant) {
   // J2 writes (the Video card's ports 4/5: a pixel, or its fill counter) reach both VRAM copies: /VXWE = /VWE AND /SWR
   c.add('U286', 'LVC08', { '1A': '/VWE', '1B': mutant === 'J2_WRITE_ONE_COPY' ? 'VCC' : '/SWR', '1Y': '/VXWE', '2A': '/VWE', '2B': '/SWR', '2Y': '/VSWE', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
   c.add('U287', 'LVC32', { '1A': 'MWRH', '1B': 'SWRH', '1Y': 'VCOE', '2A': 'VWEH', '2B': 'SWRH', '2Y': 'VSOE', '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
-  c.add('U236', 'LVC32', { '1A': 'CW_/MWR', '1B': mutant === 'WRITE_NOT_BLOCKED' ? 'GND' : 'ABORT', '1Y': '/WA', '2A': '/WA', '2B': 'FBSEL', '2Y': '/RWE',
-    '3A': '/WA', '3B': 'FBN', '3Y': '/VWE', '4A': 'GND', '4B': 'GND' });
+  // /WAS (2026-11-20): main RAM's write is /WA gated by the backplane write strobe (one slot, ending 25 ns before the
+  // CPU edge; integration/TIMING-GATE-LEVEL.md finding 1). The framebuffer path (/VWE, VBUSY on J2) keeps the unstrobed
+  // /WA for now: the Video card's protocol reads VBUSY a slot ahead, and that timing is still to be drawn (open item).
+  c.add('U236', 'LVC32', { '1A': 'CW_/MWR', '1B': mutant === 'WRITE_NOT_BLOCKED' ? 'GND' : 'ABORT', '1Y': '/WA', '2A': '/WAS', '2B': 'FBSEL', '2Y': '/RWE',
+    '3A': '/WA', '3B': 'FBN', '3Y': '/VWE', '4A': '/WA', '4B': '/WSTB', '4Y': '/WAS' });
   // --- RAM rows: 2M x 16 (rails 0..15) + 2M x 8 (rails 16..17), sharing RA0..20 and the RAMD bus; /CE from the top table
   const toT = require('./control-tables.js').toT; const tt = toT(ramSize - 1, 27); let Tmax = 0; for (let i = 15; i >= 10; i--) Tmax = 3 * Tmax + tt[i];
   const rows = (Tmax >> 5) + 1;

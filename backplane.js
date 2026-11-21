@@ -10,7 +10,8 @@ const sig = [];
 for (let i = 0; i < 27; i++) sig.push([`D${i}+`, 'bus'], [`D${i}-`, 'bus']);               // the 27-trit bus, dual-rail
 for (let i = 0; i < 10; i++) sig.push([`UA${i}`, 'uaddr']);                                // micro-address, from Control
 sig.push(['CLK', 'timing'], ['SCLK', 'timing'], ['RESET', 'timing'], ['/CEDGE', 'timing'], ['STRETCH', 'timing'], ['ABORT', 'timing'], ['FK', 'timing'], ['SPRNR', 'ctl'], ['LOAD', 'load'], ['LOAD_WE', 'load'], ['LOAD_SEL0', 'load'], ['LOAD_SEL1', 'load'], ['LOAD_SEL2', 'load']);
-for (const s of ['SF+', 'SF-', 'CF+', 'CF-', 'QT+', 'QT-', 'BTOPNZ', 'DIV0', 'BADADDR', 'PROT', 'IORDY']) sig.push([s, 'status']);
+// /WSTB (2026-11-20) takes the pin DIV0 had (no card used DIV0): the write strobe, from Control's clock generator
+for (const s of ['SF+', 'SF-', 'CF+', 'CF-', 'QT+', 'QT-', 'BTOPNZ', '/WSTB', 'BADADDR', 'PROT', 'IORDY']) sig.push([s, s === '/WSTB' ? 'timing' : 'status']);
 for (let i = 0; i < 5; i++) sig.push([`IRQSET${i}`, 'status']);                          // one-clock pulses, active high (Control's IPEND table)
 for (let i = 0; i < 5; i++) sig.push([`RSLOT${i}`, 'ctl']);                                // register RAM slot, from Control
 for (let i = 0; i < 6; i++) sig.push([`PORT${i}`, 'ctl']);                                 // I/O port number, from Control
@@ -52,12 +53,12 @@ Connector: **DIN 41612, 160 pins, 5 rows (z a b c d) × 32**, on 3U Eurocards. S
 | --- | ---: | --- |
 | bus D0..D26 (dual-rail, 54 wires) | 54 | any card → any card; whoever the BUS field names drives, through 74LVC245s |
 | micro-address UA0..UA9 | 10 | Control → every card |
-| CLK, SCLK, RESET, /CEDGE, STRETCH | 5 | Control's clock and reset generator (cards/clockgen.js) → all. SCLK is the 40 MHz master clock (the Video card's slot clock, forwarded to the Memory card over J2); CLK = SCLK ÷ 4, or ÷ 8 when STRETCH (reserved for the carry-cycle stretch, pulled low until a card drives it); /CEDGE is low in the last slot of each CPU cycle; RESET is active high and releases on a CPU edge |
+| CLK, SCLK, RESET, /CEDGE, STRETCH, /WSTB | 6 | Control's clock and reset generator (cards/clockgen.js) → all. SCLK is the 40 MHz master clock (the Video card's slot clock, forwarded to the Memory card over J2); CLK = SCLK ÷ 4, or ÷ 8 when STRETCH (the carry-cycle stretch, driven by the ALU card from its control word); /CEDGE is low in the last slot of each CPU cycle; RESET is active high and releases on a CPU edge; /WSTB is the write strobe, low for one slot: slot 2 (slot 6 when stretched), so register RAM and main RAM write only once their address, data and ABORT have settled, and stop 25 ns before the CPU edge |
 | FK | 1 | Memory → Control: which fault (protection or bad address), so the sequencer picks the right trap routine |
 | SPRNR | 1 | Control → Registers, Memory: this SPR access is a latch, not a register-RAM slot; don't drive, don't write (Memory: don't snoop) |
 | ABORT | 1 | Memory → all: the address check faulted this cycle, so no card may load anything (found by the ALU card's chip-level test) |
 | LOAD, LOAD_WE, LOAD_SEL0..2 | 5 | copy engine (I/O card) → all: power-up table loading |
-| status: SF±, CF±, QT±, BTOPNZ, DIV0, BADADDR, PROT, IORDY, IRQSET0..4 | 16 | ALU / Memory / I/O / Video → Control (sequencer conditions). IRQSET0..2 come from the I/O card (timer, keyboard, mouse); IRQSET3/4 have no source on this machine and are pulled low |
+| status: SF±, CF±, QT±, BTOPNZ, BADADDR, PROT, IORDY, IRQSET0..4 | 15 | ALU / Memory / I/O / Video → Control (sequencer conditions). IRQSET0..2 come from the I/O card (timer, keyboard, mouse); IRQSET3/4 have no source on this machine and are pulled low |
 | RSLOT0..4 | 5 | Control → Registers (register RAM slot); Memory snoops it to keep its UBASE/ULIMIT shadows |
 | PORT0..5 | 6 | Control → I/O, Video (port number, through a small imm9→binary table) |
 | MODE, PRIV, IE, PROTEN | 4 | Control → ALU (ESRV), Memory (PROTEN: user-window checks on; found building the Memory card), Video (MODE) |

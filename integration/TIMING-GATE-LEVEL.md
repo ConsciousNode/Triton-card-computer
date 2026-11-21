@@ -31,10 +31,38 @@ depends on them. Check them before trusting a bench result.
 
 Not covered: hold times (that needs min delays), wiring and backplane loading, and open-drain rise times.
 
-## Results (directed program: 67 instructions, 794 microcycles, 3,176 slots; in lockstep the whole way)
+## Update, 2026-11-20 late: Finding 1 fixed (Kham: yes), with the stretch
+- **/WSTB**, the write strobe, sits on the backplane pin DIV0 used to have (no card used DIV0).
+  - The clock generator makes it: U206 '74 + U207 '08 + a spare '04 gate. It's low for exactly one slot, the slot
+    before the /CEDGE slot (slot 2, or slot 6 when stretched), and registered on SCLK.
+  - Register RAM: /WE = /WRE | /WSTB (a spare gate in U3).
+  - Main RAM: /RWE = (/WA | /WSTB) | FBSEL (a spare gate in U236).
+  - The framebuffer path (/VWE, VBUSY) is unchanged for now. The Video card samples VBUSY a slot ahead, so its strobe
+    timing needs its own design: still open.
+- **STRETCH is driven:**
+  - The ALU card's spare control-word bit 31 is now /STR. One '04 (U120) drives the backplane line.
+  - A cycle is stretched when the word is an ADD or INCA whose result is used (BUS = ALU, or the flags). 75 of the 740
+    directed microcycles were stretched.
+- **Timing simulation after the fix** (directed program, 740 microcycles, 3,260 slots, self-test 0):
+  - SRAM writes: 1,897 windows, **0 violations**, worst slack +34.4 ns. The register slot address settles at 25.5 ns;
+    the window is 59.9–84.9 ns.
+  - CPU-clock registers: 0 violations, worst +43.3 ns.
+  - The three 25 ns paths are unchanged (Finding 3).
+- **Both halves are needed, and each mutant proves it:**
+  - `clockgen:WSTB_ALWAYS` (no strobe): 17 write violations, worst −491 ns. That's the old behavior.
+  - `ALU:NO_STRETCH` (strobe, no stretch): the ADC's 7-slice ripple reaches the register RAM at 81.9 ns, needed by
+    79.9 ns (−2.0 ns). A full 9-slice ripple would miss by about 20 ns.
+- **Tests:**
+  - Clock generator: the oracle now also requires /WSTB low exactly in the slot before /CEDGE. 22/22 cases, 8/8
+    mutants.
+  - Whole machine: directed matches, random matches.
+  - Card tests (their harnesses hold /WSTB active, declared): Registers 300K microcycles, Memory 100K, ALU 100K, all
+    0 mismatches.
+
+## Results of the first pass (before the fix; directed program: 67 instructions, 794 microcycles, 3,176 slots)
 Files: `RESULTS-timing-sim.txt`, `RESULTS-sta-table.txt`.
 
-### Finding 1: no write strobes. The register RAM and main RAM write for as long as /WE is a decoded level.
+### Finding 1 (fixed, see the update above): no write strobes. The register RAM and main RAM wrote for as long as /WE was a decoded level.
 - **What the netlist does:**
   - Registers card: /WE = /WRE = CW_/WR | SPRNR | ABORT.
   - Memory card: /RWE = CW_/MWR | ABORT | FBSEL.
@@ -106,6 +134,6 @@ the table. These need real datasheet values. If they're still short, the fix is 
   though. Breaking it (FDONE and WRAPX don't need CNTRST as an address) would make it clean by construction.
 
 ## What's next for timing
-1. Kham decides on /WSTB (Finding 1). Draw it, drive STRETCH from the ALU card, and rerun both instruments.
+1. Done: /WSTB and STRETCH (above). Still open: the framebuffer path's strobe and the Video card's VBUSY timing.
 2. Get real datasheet numbers for the soft entries. Add min delays and a hold check.
 3. Run the timing simulation over the I/O programs (stage 3) to cover Finding 4.

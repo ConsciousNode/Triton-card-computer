@@ -11,9 +11,11 @@
 | 4.7k resistor pack | 1 | "neither read nor write" during RESET |
 
 - **Inputs from the backplane:** RSLOT0..4 (Control), SPRNR (Control), ABORT (Memory), the micro-address, the bus.
-- **Write strobe:** in hardware the write pulse is the clock's second half (/WE = /WRE OR CLK) so the address and data
-  are settled when it opens. The functional simulation writes at the edge, so pulse timing goes in the timing budget
-  at schematic time.
+- **Write strobe (drawn 2026-11-20):** /WE = /WRE OR /WSTB (U3's spare gate). /WSTB is the backplane write strobe,
+  low for the slot before the CPU edge's slot, so the slot address and data are settled when it opens and still when
+  it closes, 25 ns before the edge. The first plan (/WE = /WRE OR CLK) no longer worked once CLK became a short pulse
+  from the clock generator; the integration timing simulation showed writes spanning into the next word
+  (integration/TIMING-GATE-LEVEL.md). The card test holds /WSTB active and writes at the edge, as before.
 
 ## A real bug this card caught in the Control card
 SPR 8 (PROT_EN) is a latch, but my Control card's SPR tables treated every SPR in 5..14 as a register-RAM slot. So

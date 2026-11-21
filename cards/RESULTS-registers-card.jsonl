@@ -21,3 +21,4 @@
 {"date":"2026-11-19T09:51:28.457Z","which":"random","mutant":null,"cycles":300000,"driven":44093,"bad":0,"first":null,"cov":{"write":80780,"read":44097,"ABORT":1883,"SPRNR":1,"aborted write":249}}
 {"date":"2026-11-20T02:39:19.320Z","which":"random","mutant":null,"cycles":40000,"driven":4790,"bad":0,"first":null,"cov":{"write":10992,"read":4790}}
 {"date":"2026-11-20T09:41:23.904Z","which":"directed","mutant":null,"cycles":37543,"driven":8908,"bad":0,"first":null,"cov":{"write":12029,"read":8908}}
+{"date":"2026-11-21T03:31:52.540Z","which":"random","mutant":null,"cycles":300000,"driven":44093,"bad":0,"first":null,"cov":{"write":80780,"read":44097,"ABORT":1883,"SPRNR":1,"aborted write":249}}

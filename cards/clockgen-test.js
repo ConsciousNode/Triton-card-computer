@@ -1,7 +1,7 @@
 // clockgen-test.js: the clock and reset generator against an independent oracle (Kehai Interim, 2026-11-20). MIT.
 // Steps half-slots (SCLK high, SCLK low). On each step every flip-flop half whose own clock net rose is clocked with
 // the values settled just before that edge (so CLK and SCLK rising together both see pre-edge data).
-// Checks: /CEDGE low exactly one slot per CPU cycle (4 slots, 8 when STRETCH); CLK rises only at the end of a /CEDGE
+// Checks: /CEDGE low exactly one slot per CPU cycle (4 slots, 8 when STRETCH); /WSTB low exactly in the slot before it; CLK rises only at the end of a /CEDGE
 // slot and is high only during the SCLK-high half right after it (no glitches); RESET asserts at once on POR or LOAD and
 // releases on exactly the 2nd CPU edge after both drop; the slot counter locks from all 16 power-up states; every
 // mutant in clockgen.MUTANTS is caught. Usage: node clockgen-test.js [all|mutants]
@@ -29,7 +29,7 @@ function run(mutant, { slots = 400, stretchFor = () => 0, por = null, load = nul
     w.set('POR', por && s >= por[0] && s < por[1] ? 1 : 0); w.set('LOAD', load && s >= load[0] && s < load[1] ? 1 : 0);
     w.set('STRETCH', stretchFor(cyc) ? 1 : 0);
     const hi = step(c, w, 1); const lo = step(c, w, 0);
-    const rec = { s, cedgeN: hi.get('/CEDGE'), clkHi: hi.get('CLK'), clkLo: lo.get('CLK'), resetHi: hi.get('RESET'), resetLo: lo.get('RESET'), stretch: w.get('STRETCH'), por: w.get('POR'), load: w.get('LOAD') };
+    const rec = { s, wstbHi: hi.get('/WSTB'), wstbLo: lo.get('/WSTB'), cedgeN: hi.get('/CEDGE'), clkHi: hi.get('CLK'), clkLo: lo.get('CLK'), resetHi: hi.get('RESET'), resetLo: lo.get('RESET'), stretch: w.get('STRETCH'), por: w.get('POR'), load: w.get('LOAD') };
     tr.push(rec); if (rec.cedgeN === 0) cyc++;
   }
   return tr;
@@ -43,6 +43,9 @@ function judge(tr, { lockBy = 16 } = {}) {
   for (const r of tr) { if (r.s < lockBy) continue; const prevCedge = tr[r.s - 1] && tr[r.s - 1].cedgeN === 0;
     if (r.clkHi !== (prevCedge ? 1 : 0)) { bad.push(`slot ${r.s}: CLK high-half = ${r.clkHi}, expected ${prevCedge ? 1 : 0}`); break; }
     if (r.clkLo !== 0) { bad.push(`slot ${r.s}: CLK high during SCLK-low half (glitch)`); break; } }
+  // /WSTB (2026-11-20): low for exactly the slot before each /CEDGE slot, both halves; high in every other slot
+  for (const r of tr) { if (r.s < lockBy || !tr[r.s + 1]) continue; const want = tr[r.s + 1].cedgeN === 0 ? 0 : 1;
+    if (r.wstbHi !== want || r.wstbLo !== want) { bad.push(`slot ${r.s}: /WSTB ${r.wstbHi}/${r.wstbLo}, expected ${want}`); break; } }
   // reset: high in any slot where POR or LOAD is high (asserted at once); released at the 2nd CPU edge after both drop
   for (const r of tr) if ((r.por || r.load) && (r.resetHi !== 1 || r.resetLo !== 1)) { bad.push(`slot ${r.s}: reset request but RESET=${r.resetHi}`); break; }
   const lastReq = tr.reduce((m, r) => r.por || r.load ? r.s : m, -1);

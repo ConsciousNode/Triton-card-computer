@@ -11,7 +11,7 @@ const T = (k, r) => `${k}${r ? '-' : '+'}`;                    // T('A3',0) = 'A
 // the card's control word: bit index -> name (active-low names start with /)
 const CW = ['/A_CE', '/B_CE', 'FN0', 'FN1', 'FN2', 'FN3', 'NEG0', 'NEG1', 'CIN0', 'CIN1', 'BCAST', 'SHS0', 'SHS1', '/SHOE', '/L9OE',
   'FILL0', 'FILL1', 'LINK0', 'LINK1', 'LDQT', 'W9', '/BUSOE',
-  '/FL_CE', '/SH_CE', 'FSEL0', 'FSEL1', 'FOP0', 'FOP1', 'FOP2', '/SHOE_LO', '/ESRV', 'spare31'];
+  '/FL_CE', '/SH_CE', 'FSEL0', 'FSEL1', 'FOP0', 'FOP1', 'FOP2', '/SHOE_LO', '/ESRV', '/STR'];
 
 function build(aluImage, csImages, mutant, flagImages = null) {
   const ft = flagImages || (() => { const t = require('./flag-tables.js'); return { sign: t.tryteSign(), flags: t.flagTable() }; })();   // mutant: a deliberate wiring error, for the positive controls
@@ -107,6 +107,10 @@ function build(aluImage, csImages, mutant, flagImages = null) {
     const fl = ['SF+', 'SF-', 'CF+', 'CF-', 'OF+', 'OF-'];
     for (let i = 0; i < 9; i++) { pins[`1D${i}`] = i < 6 ? 'N' + fl[i] : 'GND'; if (i < 6) pins[`1Q${i}`] = fl[i]; pins[`2D${i}`] = i < 6 ? fl[i] : 'GND'; if (i < 6) pins[`2Q${i}`] = 'S' + fl[i]; }
     c.add('U119', 'ALVCH16823', pins); }
+  // --- STRETCH (2026-11-20): the carry-cycle stretch, from control word bit 31 (/STR, pulled high in RESET = no
+  // stretch). One inverter drives the backplane line; Control's clock generator gives the cycle 8 slots instead of 4.
+  // Mutant NO_STRETCH: the line stays low (the wiring before 2026-11-20).
+  c.add('U120', 'LVC04', { '1A': mutant === 'NO_STRETCH' ? 'VCC' : 'CW_/STR', '1Y': 'STRETCH', '2A': 'GND', '3A': 'GND', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
   if (process.env.LOADPATH) require('./loadpath.js').addLoadPath(c, { worldLoad: { RESET: 1 } });   // COPY-ENGINE.md option B
   return c;
 }
@@ -138,7 +142,12 @@ function cardWord(mu, addr = -1, fixed = {}) {
   for (let i = 0; i < 3; i++) f[`FOP${i}`] = ((fop < 0 ? 0 : fop) >> i) & 1;
   f['/FL_CE'] = (fop >= 0 || psw === 'ENTER' || psw === 'RESTORE') ? 0 : 1;
   const fsel = psw === 'ENTER' ? 1 : psw === 'RESTORE' ? 2 : 0; f.FSEL0 = fsel & 1; f.FSEL1 = fsel >> 1;
-  f['/SH_CE'] = (addr === fixed.FETCH || addr === fixed.FETCH2 || mu.RETIRE) ? 0 : 1;   // RETIRE words (block-move steps) snapshot too; they keep flags, so old = new
+  f['/SH_CE'] = (addr === fixed.FETCH || addr === fixed.FETCH2 || mu.RETIRE) ? 0 : 1;
+  // the stretch (TIMING-BUDGET.md, "stretch only the carry cycles"): an ADD or INCA whose result is used, on the bus or
+  // by the flags. Its carry may ripple through all 9 slices inside this cycle (≈110-120 ns), and with the write strobe
+  // in the second-to-last slot the result has to be there by slot 6 of 8.
+  const fnc = mu.ALU_FN || 'ADD', used = bus === 'ALU' || (mu.FLAGS && mu.FLAGS !== 'KEEP');
+  f['/STR'] = (fnc === 'ADD' || fnc === 'INCA') && used ? 0 : 1;   // RETIRE words (block-move steps) snapshot too; they keep flags, so old = new
   let w = 0; CW.forEach((n, i) => { w |= (f[n] | 0) << i; }); return w;
 }
 module.exports = { build, cardWord, CW };

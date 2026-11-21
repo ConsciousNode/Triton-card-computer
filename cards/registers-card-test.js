@@ -4,6 +4,8 @@
 // only). Declared exception: at each machine start the RAM is preset to the microsim's starting register values (the
 // test programs set registers directly). Usage: node registers-card-test.js [workload] [maxCycles] [programs]
 'use strict';
+// /WSTB (2026-11-20): the backplane write strobe. This harness writes at the edge with settled values, so it holds the
+// strobe active (low); its timing is checked on the whole machine (integration/timing-sim.js).
 const fs = require('fs'), path = require('path');
 const { build, cardWord } = require('./registers-card.js');
 const { rails, trit } = require('./netlist.js');
@@ -27,14 +29,14 @@ const proto = MicroMachine.prototype, orig = proto.cycle;
 proto.cycle = function () {
   if (n >= MAXC) return orig.call(this);
   if (this !== lastMachine) { lastMachine = this; machines++; preset(this.rf); card.chips.find(c => c.ref === 'U2').q = [];
-    const w0 = new Map([['CLK', 0], ['RESET', 1], ['ABORT', 0], ['SPRNR', 0]]); for (let i = 0; i < 5; i++) w0.set(`RSLOT${i}`, 0); for (let i = 0; i < 10; i++) w0.set(`UA${i}`, 0);
+    const w0 = new Map([['CLK', 0], ['/WSTB', 0], ['RESET', 1], ['ABORT', 0], ['SPRNR', 0]]); for (let i = 0; i < 5; i++) w0.set(`RSLOT${i}`, 0); for (let i = 0; i < 10; i++) w0.set(`UA${i}`, 0);
     for (let k = 0; k < 27; k++) { w0.set(`D${k}+`, 0); w0.set(`D${k}-`, 0); } card.settle(w0); const u2 = card.chips.find(c => c.ref === 'U2'); P.LVC574.clock(u2, p => card.v.get(u2.pins[p])); }
   const mu = this.cs.store[this.upc], d = this.decode(), upc = this.upc;
   const rs = mu.RF_SEL || 'RD';
   const slot = { RD: d.rd, RS1: d.rs1, RS2: d.rs2, CONST: mu.CONST, SP: SLOT.SP, T0: SLOT.T0, T1: SLOT.T1, FPC: SLOT.FPC }[rs] ?? (d.imm >= 5 && d.imm <= 14 && d.imm !== 8 ? 10 + d.imm : 0);
   const sprnr = rs === 'SPR' && !(d.imm >= 5 && d.imm <= 14 && d.imm !== 8) ? 1 : 0;
   this.lastBus = ABORTED; const res = orig.call(this); const aborted = this.lastBus === ABORTED;
-  const w = new Map([['CLK', 0], ['RESET', 0], ['ABORT', aborted ? 1 : 0], ['SPRNR', sprnr]]);
+  const w = new Map([['CLK', 0], ['/WSTB', 0], ['RESET', 0], ['ABORT', aborted ? 1 : 0], ['SPRNR', sprnr]]);
   for (let i = 0; i < 5; i++) w.set(`RSLOT${i}`, (slot >> i) & 1); for (let i = 0; i < 10; i++) w.set(`UA${i}`, (upc >> i) & 1);
   const cardDrives = mu.RF_RD && !sprnr;
   if (!cardDrives) toT(this.lastBus === undefined || aborted ? 0 : this.lastBus, 27).forEach((x, k) => { const [p, q] = rails(x); w.set(`D${k}+`, p); w.set(`D${k}-`, q); });

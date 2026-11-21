@@ -106,7 +106,12 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **Marginal:** three 25 ns paths, all depending on datasheet numbers not yet verified.
   - **Positive control:** with 30 ns tables, the timing fails as it must. The timing simulation's self-test shows 0
     differing nets on every run.
-- **Next:** /WSTB and the STRETCH driver (Kham: yes); then stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
+- **/WSTB and STRETCH, done (Kham: yes).** The write strobe is on DIV0's old pin, made by the clock generator, and
+  gates register RAM and main RAM writes. The ALU card drives STRETCH on carry words.
+  - Timing simulation: 0 write violations (+34 ns worst), 0 CPU-register violations.
+  - The mutants without the strobe or without the stretch both fail.
+  - Details in `integration/TIMING-GATE-LEVEL.md`. Open: the framebuffer write path's strobe (Video's VBUSY timing).
+- **Next:** stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
   and the POOP OK boot.
 
 ## Stage 1: compose the cards
