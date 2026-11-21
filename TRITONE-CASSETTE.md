@@ -1,6 +1,6 @@
 # Tritone, the CNSW (Cassette Native Storage Worker): a ternary cassette drive for Triton (sketch)
-**Idea:** Kham. **Sketch:** Kehai Interim, 2026-11-21. A future side project, not scheduled. Nothing here is built or Name: Kham (CNSW is also the studio's initials, ConsciousNode SoftWorks).
-tested yet.
+**Idea:** Kham. **Sketch:** Kehai Interim, 2026-11-21. A future side project, not scheduled. Nothing here is built or
+tested yet. Name: Kham (CNSW is also the studio's initials, ConsciousNode SoftWorks).
 
 Save and load TritOS programs on an ordinary audio cassette, one trit per tone, in the spirit of the 1970s Kansas City
 Standard (two tones for bits). Any cassette deck works, and the drive needs no special hardware.
