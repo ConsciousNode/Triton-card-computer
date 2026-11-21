@@ -27,3 +27,12 @@
   (units: internal, microSD images, cartridge), emulator first. Timer question: step-timed TritOS would run 2–5× fast on
   hardware → real-time 200 kHz tick mode + exact-step conformance mode. Sound absent from the ISA.
 - **Decided 2026-11-17:** it's **Triton 4** (units, TritFS v2, timer mode, RTC). See TRITON-4-STORAGE-TIME.md.
+
+## Cost-down pass (future, after full sim + POOP OK + JPUSB)
+
+Hard constraints for any optimizer (Neon, Yosys/ABC, or us), decided by Kham 2026-11-20:
+- **Crew-named cards stay.** No merging cards away; each card keeps its name and its job.
+- **Repairability stays.** Socketable/hand-solderable parts, readable silkscreen, testable per card.
+- **No programmable logic:** no FPGA, CPLD, PAL/GAL, MCU, or anything programmable standing in for logic.
+- **The verified netlist is the oracle.** Any optimized version must pass whole-machine lockstep against it, the same mutant set plus new ones aimed at its changes, and gate-level STA.
+- **Open for Kham:** how far logic may be pushed into SRAM lookup tables before it drifts toward table-sequenced emulation.
