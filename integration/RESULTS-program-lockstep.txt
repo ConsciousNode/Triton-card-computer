@@ -124,3 +124,16 @@ MUTANT {"IO":"CON_NO_STALL"}
 bus drivers high: none
 POOP OK: 20 instructions, 110 microcycles, 424 s: FAIL at microcycle 110 (instruction 20): terminal received "\u0014", the microsim printed "POOP OK\r\n"
 program-lockstep: 0/1 programs match
+
+## stage 4: compiled settle (2026-11-21)
+SETTLE=check directed:
+directed: 57 instructions, 740 microcycles, 225 s: match
+program-lockstep: 1/1 programs match
+SETTLE=check cards/io-ports-test.js console:
+console: 534 instructions, 18,826 µcycles; the terminal received "POOP OK\r\n0 7 -1 42 -9841"... (57 bytes, 0 framing errors)
+I/O ports card vs microsim (console): 18,826 microcycles (+48,849 extra wait), drove BUS=IO 0 times, 1 machine power-up(s), 0 mismatches
+coverage: {"IORDY held by the console":197790,"console byte":57,"extra wait microcycles":48849,"SPI slow":57,"RTC count":8}
+POOP OK with the fast settle:
+  terminal: "POOP OK\r\n" (9 bytes, 0 framing errors); the CPU waited 7803 microcycles on IORDY
+POOP OK: 20 instructions, 7913 microcycles, 872 s: match
+program-lockstep: 1/1 programs match

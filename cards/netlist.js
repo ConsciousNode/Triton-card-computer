@@ -17,7 +17,68 @@ class Card {
       if (!P[c.part].out.includes(pin) && !drivers.has(n) && !this.inputs.has(n)) throw new Error(`${c.ref}.${pin}: net ${n} has no driver`);
     this.drivers = drivers; return this;
   }
-  settle(world) {                               // world: Map of input net values
+  // settle(): the fast version by default (2026-11-21, integration stage 4); SETTLE=slow runs the original, and
+  // SETTLE=check runs both on every call and throws on the first difference (values, presence, or error).
+  settle(world) {
+    const mode = process.env.SETTLE || 'fast';
+    if (mode === 'slow') return this.settleSlow(world);
+    if (mode !== 'check') return this.settleFast(world);
+    const snap = this.chips.map(c => [c.q === undefined ? undefined : JSON.stringify(c.q), c.a, c.b]);
+    let ef = null, rf = null; try { rf = this.settleFast(world); } catch (e) { ef = e.message; }
+    const after = this.chips.map(c => [c.q === undefined ? undefined : JSON.stringify(c.q), c.a, c.b]);
+    this.chips.forEach((c, i) => { if (snap[i][0] !== undefined) c.q = JSON.parse(snap[i][0]); else delete c.q; if (snap[i][1] !== undefined) c.a = snap[i][1]; if (snap[i][2] !== undefined) c.b = snap[i][2]; });
+    let es = null, rs = null; try { rs = this.settleSlow(world); } catch (e) { es = e.message; }
+    const after2 = this.chips.map(c => [c.q === undefined ? undefined : JSON.stringify(c.q), c.a, c.b]);
+    if (ef !== es) throw new Error(`SETTLE=check: errors differ: fast ${ef} / slow ${es}`);
+    if (JSON.stringify(after) !== JSON.stringify(after2)) throw new Error('SETTLE=check: async state differs');
+    if (rs) { if (rs.size !== rf.size) throw new Error(`SETTLE=check: ${rf.size} nets vs ${rs.size}`); for (const [k, x] of rs) if (rf.get(k) !== x) throw new Error(`SETTLE=check: ${k} fast ${rf.get(k)} slow ${x}`); }
+    this.settleChecks = (this.settleChecks || 0) + 1;
+    if (es) throw new Error(es); return rs;
+  }
+  // The same algorithm as settleSlow, pass for pass and chip for chip, on integer net ids and typed arrays instead of a
+  // new Map per pass. Values: 0, 1, Z = 2, absent = 3.
+  settleFast(world) {
+    const order = this.order || (this.order = [...this.chips.filter(c => P[c.part].reg), ...this.chips.filter(c => P[c.part].weak), ...this.chips.filter(c => !P[c.part].reg && !P[c.part].weak)]);
+    let F = this._fast;
+    if (!F || F.order !== order || F.nChips !== this.chips.length) {
+      const id = new Map(), names = []; const nid = n => { let k = id.get(n); if (k === undefined) { k = names.length; id.set(n, k); names.push(n); } return k; };
+      nid('GND'); nid('VCC');
+      const chips = order.map((c, ci) => { const pid = {}; for (const [pin, n] of Object.entries(c.pins)) if (n !== undefined) pid[pin] = nid(n); return { c, ci, pid }; });
+      F = this._fast = { order, nChips: this.chips.length, id, names, chips, nid };
+    }
+    const { id, names, chips, nid } = F; const Z = 2, A = 3;
+    for (const k of world.keys()) nid(k); if (this.defaults) for (const k of this.defaults.keys()) nid(k);
+    const N = names.length, enc = x => x === 'Z' ? Z : x === undefined ? A : x;
+    const base = new Int8Array(N).fill(A), baseHas = new Uint8Array(N);
+    for (const [k, x] of world) { const i = id.get(k); base[i] = enc(x); baseHas[i] = 1; }
+    base[id.get('GND')] = 0; base[id.get('VCC')] = 1; baseHas[id.get('GND')] = 1; baseHas[id.get('VCC')] = 1;
+    if (this.defaults) for (const [k, x] of this.defaults) { const i = id.get(k); if (!baseHas[i]) { base[i] = enc(x); baseHas[i] = 1; } }
+    let prev = base.slice(), v = new Int8Array(N), missing = null, fight = null;
+    const drv = new Int32Array(N), weakRef = new Uint8Array(order.length), weakNet = new Uint8Array(N), clash = new Set();
+    const dec = x => x === Z ? 'Z' : x === A ? undefined : x;
+    let cur = null;   // the chip being evaluated
+    const g = pin => { const i = cur.pid[pin]; if (i === undefined) throw new Error(`${cur.c.ref}: pin ${pin} unconnected`);
+      let x = v[i]; if (x === A || x === Z || (weakNet[i] && prev[i] !== A && prev[i] !== Z)) { const p = prev[i]; if (p !== A) x = p; }
+      if (x === A || x === Z) { if (!missing) missing = `${cur.c.ref}.${pin}: net ${names[i]} undriven`; return 0; } return x; };
+    const gz = pin => { const i = cur.pid[pin]; if (i === undefined) return 'Z'; let x = v[i]; if (x === A || x === Z) x = prev[i]; return x === A || x === Z ? 'Z' : x; };
+    const s = (pin, x, weak) => { const i = cur.pid[pin]; if (i === undefined) return; if (x === 'Z') return; const pd = drv[i] - 1;
+      if (weak) { if (baseHas[i] && base[i] !== Z) return; if (pd >= 0) { if (weakRef[pd] && v[i] !== x) clash.add(i); return; } }
+      else if (pd >= 0 && pd !== cur.ci && !weakRef[pd]) { if (!fight) fight = `bus fight on ${names[i]}: ${chips[pd].c.ref} and ${cur.c.ref}`; return; }
+      drv[i] = cur.ci + 1; if (weak) { weakRef[cur.ci] = 1; weakNet[i] = 1; } else weakNet[i] = 0; v[i] = x; };
+    const pass = () => { v.set(base); drv.fill(0); weakRef.fill(0); weakNet.fill(0); clash.clear(); missing = null; fight = null;
+      for (const ch of chips) { cur = ch; P[ch.c.part].eval(ch.c, g, s, gz); }
+      for (const i of clash) { const pd = drv[i] - 1; if (pd >= 0 && weakRef[pd] && !fight) fight = `weak contention on ${names[i]} (two resistors disagree)`; }
+      let changed = false; for (let i = 0; i < N; i++) if (v[i] !== prev[i]) { changed = true; break; }
+      const t = prev; prev = v; v = t; return changed; };
+    const toMap = () => { const m = new Map(); for (let i = 0; i < N; i++) if (prev[i] !== A) m.set(names[i], dec(prev[i])); return m; };
+    let k = 0; while (pass() || missing) { if (++k > 12) { this.v = toMap(); throw new Error(missing || 'netlist does not settle (a combinational loop?)'); } }
+    if (!this.asyncChips) this.asyncChips = this.chips.filter(c => P[c.part].async);
+    for (let r = 0; r < 4; r++) { let chg = false;
+      for (const c of this.asyncChips) if (P[c.part].async(c, pin => { const i = id.get(c.pins[pin]); return i === undefined ? undefined : dec(prev[i]); })) chg = true;
+      if (!chg) break; k = 0; while (pass() || missing) { if (++k > 12) { this.v = toMap(); throw new Error(missing || 'netlist does not settle'); } } }
+    const out = toMap(); this.v = out; if (fight) throw new Error(fight); this.passes = Math.max(this.passes || 0, k + 1); return out;
+  }
+  settleSlow(world) {                           // world: Map of input net values (the original settle, 2026-11-18)
     // Passes repeat until a whole pass reproduces the previous one. Each pass rebuilds every driven net from scratch
     // (reading this pass's value when there is one, else the previous pass's), so a driver that turns off really
     // releases its net. Errors: two drivers on a net, a net still undriven when settled, or no settling (a loop).

@@ -157,8 +157,16 @@ could pass every card test. The Registers card's test catching a Control card fa
   - 20 instructions, 7,913 microcycles, in lockstep the whole way.
   - **Positive control:** IO:CON_NO_STALL (the console doesn't hold IORDY) garbles the line and fails.
   - **Declared, as at card level:** the microsim's WAIT lasts exactly as long as the netlist holds IORDY low.
-- **Next:** the rest of stage 3 part 2 (the PRNUM console workload, SD, PS/2, timer, video ports); stage 4 (speed:
-  this run took 38 minutes) (I/O programs, traps, IRQs), stage 4 (simulator speed),
+- **Stage 4, first step: a compiled settle (2026-11-21).** `Card.settleFast` (netlist.js) is the same algorithm,
+  pass for pass and chip for chip, on integer net ids and typed arrays instead of a new Map per pass.
+  - `SETTLE=slow` runs the original. `SETTLE=check` runs both on every call and throws on the first difference
+    (values, presence, errors, async state).
+  - **Checked:** the whole-machine directed program (740 microcycles, every settle compared) and the I/O card's
+    console workload (18,826 microcycles plus 48,849 wait; 0 mismatches, no difference thrown).
+  - **POOP OK: 872 s, down from 2,279 s (2.6×).**
+  - The rest of the time is still full passes over 664 chips. The next step is event-driven settling (re-evaluate
+    only chips whose inputs changed), guarded by the same check mode.
+- **Next:** the rest of stage 3 part 2 (the PRNUM console workload, SD, PS/2, timer, video ports); event-driven settle (I/O programs, traps, IRQs), stage 4 (simulator speed),
   and the POOP OK boot.
 
 ## Stage 1: compose the cards
