@@ -148,7 +148,7 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **Found by the random programs:** supervisor-mode IN/OUT reach the devices, and the I/O wait isn't synchronized
     with the microsim's device model. That's **stage 3 part 2**: the microsim's BareIO model plus world devices at the
     pins, as `io-ports-test.js` does at card level, and the Video ports.
-- **THE MILESTONE: the integrated machine prints `POOP OK` (2026-11-21, 05:40).**
+- **THE MILESTONE: the integrated machine prints `POOP OK` (2026-11-21, about 5 am).**
   - `program-lockstep.js poop`: from power-on, the RESET routine, then nine OUT 0s. The whole machine, all six cards
     plus the backplane, sends `POOP OK\r\n` out CON_TX at 115,200 baud.
   - The world's terminal, a UART receiver at the pin, gets all 9 bytes with 0 framing errors. That is exactly what the
