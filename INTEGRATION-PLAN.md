@@ -119,7 +119,32 @@ could pass every card test. The Registers card's test catching a Control card fa
     2. Synchronize between its 48 MHz domain and SCLK.
     3. Write the TritOS driver.
     4. Run a whole-machine test with a simulated USB keyboard.
-- **Next:** stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
+- **Stage 3, part 1 (2026-11-21): traps, user mode and protection on the whole machine** (`program-lockstep.js traps`
+  and `trapsrandom`; no I/O devices yet).
+  - A vector table at VBR 9000. Fault handlers skip the faulting instruction and copy EADDR into a register, so the
+    recorded fault address is compared too. SYSCALL ends a program.
+  - **The directed trap program matches:** 90 instructions, 727 microcycles. It takes, in order:
+    - an unallocated opcode (vector 1);
+    - a bad address (4);
+    - DIV and MOD by zero with TRAP_DIV0 on (5), then a non-trapping DIV with it off;
+    - then in user mode with a [0, 6000) window: a store outside (3); a POP whose third tryte faults in the very word
+      that writes SP (3: SP must not change); a word store whose last tryte is outside (3, the whole-word check);
+      MFSPR and IN (2);
+    - SYSCALL.
+  - **Mutants:** 7 of 8 caught. TRAP_BAD_WIRED_WRONG, PSW_ENTER_IGNORED, WRITE_NOT_BLOCKED, FK_INVERTED,
+    CHK3_USES_SINGLE, ABORT_IGNORED and ESRV_PRIV_IE_SWAPPED are caught. CHK3_USES_SINGLE and ABORT_IGNORED survived
+    the first version of the program, and the word-store and POP cases were added for them.
+    - **MAR_IGNORES_ABORT survives** on the whole machine. After a fault every trap path reloads MAR before using it,
+      so I found no architectural effect. The Memory card's own test still catches it at the card.
+  - **Random trap programs** (user and supervisor, SPR writes including mode switches, IRET, faulting loads and
+    stores, illegal opcodes) are running in `trapsrandom`. Results go in `RESULTS-program-lockstep.txt`.
+  - **One more checker correction:** on an aborted cycle the cards still drive the bus the word asked for (a register
+    read, for instance), with every load and write blocked. The bus is a don't-care there; registers, PC and memory are
+    still compared.
+  - **Found by the random programs:** supervisor-mode IN/OUT reach the devices, and the I/O wait isn't synchronized
+    with the microsim's device model. That's **stage 3 part 2**: the microsim's BareIO model plus world devices at the
+    pins, as `io-ports-test.js` does at card level, and the Video ports.
+- **Next:** stage 3 part 2 (I/O programs, traps, IRQs), stage 4 (simulator speed),
   and the POOP OK boot.
 
 ## Stage 1: compose the cards

@@ -112,6 +112,98 @@ function genRandom() {
   lines.push('HALT'); return '  LI R8, #5000\n' + lines.map((l, i) => `L${i}: ${l}`).join('\n');
 }
 
+// ---- stage 3, part 1 (2026-11-20, late): traps, user mode and protection on the whole machine. No I/O devices.
+// Vector table at VBR = 9000 (13 words, ISA-4 section 4): faults (vectors 0-5) go to H, which skips the faulting
+// instruction (EPC + 2) and IRETs; SYSCALL and the IRQ vectors go to HS, a supervisor HALT (a user-mode program ends
+// with SYSCALL; HALT itself is privileged). KSP = 60000 so a trap from user mode has a stack. H also copies EADDR into
+// R6, so the faulting address the hardware recorded is compared with every register at the next boundary.
+const VBR = 9000, DATA = 5000, w3 = v => { const t0 = ((v % 19683) + 19683 + 9841) % 19683 - 9841, r = (v - t0) / 19683, t1 = ((r % 19683) + 19683 + 9841) % 19683 - 9841; return [t0, t1, (r - t1) / 19683]; };
+const vectors = sym => { const out = []; for (let v = 0; v < 13; v++) { const w = w3(v <= 5 ? sym.H : sym.HS); for (let j = 0; j < 3; j++) out.push([VBR + 3 * v + j, w[j]]); } return out; };
+const HANDLERS = `H: MFSPR R7, #9
+  MFSPR R6, #13
+  ADDI R7, R7, #2
+  MTSPR R7, #9
+  IRET
+HS: HALT
+`;
+const TRAPS = `${ld('R0', VBR)}
+  MTSPR R0, #5
+${ld('R0', 60000)}
+  MTSPR R0, #14
+  LI R8, #${DATA}
+${ld('R1', 581130733)}
+ILL: NOP
+  LI R2, #-5
+  LT R3, R2, #0
+  ST R1, R8, #4
+  LI R3, #1
+  MTSPR R3, #15
+  LI R4, #0
+  DIV R5, R1, R4
+  MOD R5, R1, R4
+  LI R3, #0
+  MTSPR R3, #15
+  DIV R5, R1, R4
+  MTSPR R3, #6
+${ld('R3', 6000)}
+  MTSPR R3, #7
+${ld('R3', 5998)}
+  MTSPR R3, #10
+  LI R3, #0
+  MTSPR R3, #11
+  LI R3, #spset
+  MTSPR R3, #9
+  IRET
+spset:
+  LI R3, #1
+  MTSPR R3, #1
+  POP R5
+${ld('R4', 7000)}
+  ST R1, R4, #0
+${ld('R4', 5999)}
+  SW R1, R4, #0
+  LW R5, R8, #3
+  MFSPR R6, #1
+  PUSH R1
+  IN R6, #40
+  SYSCALL #7
+${HANDLERS}`;
+// ILL is patched to an unallocated opcode (56: vector 1). Then: a bad address (-5, vector 4); DIV and MOD by zero with
+// TRAP_DIV0 = 1 (vector 5) and then = 0 (no trap, a defined result); user mode with [0, 6000): a store to 7000
+// (vector 3) after SP = 5998 is set through IRET and a POP's third tryte (6000) faults in the same word that writes SP
+// (vector 3; SP must not change), a word store at 5999 whose last tryte (6001) is outside (vector 3, the whole-word check), MFSPR and IN (vector 2), a PUSH (SP 5998, inside: no fault); SYSCALL ends it.
+const trapOpts = { patch: (c, sym) => { c[sym.ILL] = 56 * 81; }, preload: vectors };
+const SAFE_MTSPR = [0, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 14, 15, 15, 16, -1];   // as microsim/diff.js
+function genTraps() {
+  const n = ri(15, 45), lines = [], R = () => 'R' + ri(0, 6), imm = () => pick([0, 1, -1, 9841, -9841, ri(-9841, 9841), ri(-50, 50)]);
+  const off = () => rnd() < 0.15 ? pick([997, 998, 999, 1000, -1001, -1002, -1000]) : ri(-2000, 2000);
+  for (let i = 0; i < n; i++) { const k = rnd(), fwd = () => 'L' + ri(i + 1, n);
+    if (k < 0.05) lines.push(`SYSCALL #${pick([0, 1, -3])}`);
+    else if (k < 0.10) lines.push(`MFSPR ${R()}, #${ri(-1, 16)}`);
+    else if (k < 0.15) lines.push(`MTSPR ${R()}, #${pick(SAFE_MTSPR)}`);
+    else if (k < 0.17) lines.push('IRET');
+    // (no IN/OUT: in supervisor mode they reach the devices, and the I/O wait isn't synchronized with the microsim's
+    // device model yet; that is stage 3 part 2. The directed TRAPS program has IN in user mode, which traps.)
+    else if (k < 0.36) lines.push(`${pick(['ADD', 'ADC', 'SUB', 'SBC', 'TMIN', 'TXOR', 'MUL', 'DIV', 'MOD', 'DIV', 'MOD'])} ${R()}, ${R()}, ${R()}`);
+    else if (k < 0.45) lines.push(`${pick(['ADDI', 'SUBI', 'ADDM', 'ADDH', 'MULI', 'TUNARY'])} ${R()}, ${R()}, #${imm()}`);
+    else if (k < 0.52) lines.push(`${pick(['LI', 'LUI', 'LMI', 'LHI'])} ${R()}, #${imm()}`);
+    else if (k < 0.56) lines.push(rnd() < 0.5 ? `CMP ${R()}, ${R()}` : `CMPI ${R()}, #${imm()}`);
+    else if (k < 0.72) lines.push(`${pick(['LT', 'ST', 'LW', 'SW', 'LDX', 'STX', 'LWX', 'SWX'])} ${R()}, ${rnd() < 0.85 ? 'R8' : R()}, #${off()}`);
+    else if (k < 0.78) lines.push(rnd() < 0.5 ? `PUSH ${R()}` : `POP ${R()}`);
+    else if (k < 0.88) lines.push(`${pick(['JMP', 'JN', 'JZ', 'JP', 'JNZ', 'JNP', 'JNN'])} ${fwd()}`);
+    else if (k < 0.92) lines.push(`CALL L${i + 1}`);
+    else lines.push(`${pick(['NEG', 'MOV'])} ${R()}, ${R()}`); }
+  const user = rnd() < 0.4, ub = user ? pick([0, 0, 1000]) : 0, ul = user ? pick([60000, 6000, 50001]) : 4782969;
+  const pro = [ld('R0', VBR), 'MTSPR R0, #5', ld('R0', pick([0, 60000])), 'MTSPR R0, #14', `LI R0, #${pick([0, 1])}`, 'MTSPR R0, #15',
+    `LI R8, #${DATA}`, ...[0, 1, 2, 3, 4, 5, 6].map(r => ld(`R${r}`, r < 3 ? DATA + ri(-1500, 1500) : pick([ri(-3, 20), ri(-9841, 9841), ri(-3e12, 3e12), 0]))),
+    ld('R7', ub), 'MTSPR R7, #6', ld('R7', ul), 'MTSPR R7, #7', ...(user ? ['LI R7, #1', 'MTSPR R7, #1'] : [])];
+  const ill = rnd() < 0.3 ? ri(0, n - 1) : -1;
+  const src = pro.join('\n') + '\n' + lines.map((l, i) => `L${i}: ${i === ill ? 'ILLX: ' : ''}${l}`).join('\n') + `\nL${n}: SYSCALL #0\n  HALT\n` + HANDLERS;
+  const data = []; for (let a = DATA - 2100; a < DATA + 2100; a += 7) data.push([a, ri(-9841, 9841)]);   // a sparse data window
+  return { src, user, opts: { capOk: true, cap: 2500, preload: sym => [...vectors(sym), ...data],
+    patch: (c, sym) => { if (sym.ILLX !== undefined) c[sym.ILLX] = pick([56, 57, 80, 121, -14, -50, -121]) * 81 + ri(-4, 4) * 9 + ri(-4, 4); } } };
+}
+
 // ---- one program on a fresh machine
 const m = compose({ mutants: MUT }); const chip = new Map(m.chips.map(c => [c.ref, c]));
 if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.STA });   // STA=table or STA=cycle
@@ -130,19 +222,24 @@ const ABORTED = Symbol('aborted');
 const word = (v, pfx) => { let x = 0; for (let i = 9; i >= 0; i--) x = 2 * x + (v.get(`${pfx}${i}`) | 0); return x; };
 const busOf = v => { let x = 0; for (let k = 26; k >= 0; k--) { const p = v.get(`D${k}+`), q = v.get(`D${k}-`); if (p && q) return NaN; x = 3 * x + trit(p, q); } return x; };
 
-function runOne(src, label) {
-  const code = T.assemble(src, { mode: 'T3' }).trytes;
+// opts.patch(trytes, symbols): change the assembled image (e.g. an unallocated opcode the assembler won't write);
+// opts.preload(symbols) -> [[address, tryte], ...]: data put in RAM with the program (the same declared preload);
+// opts.cap: microcycles before a program that hasn't halted counts as "ran to the cap" (a pass when opts.capOk)
+function runOne(src, label, opts = {}) {
+  const asm = T.assemble(src, { mode: 'T3' }), code = asm.trytes; if (opts.patch) opts.patch(code, asm.symbols);
   // fresh state on the same composed netlist: every register, RAM and status bit back to its power-up value
   for (const c of m.chips) { if (c.q) c.q = c.part === 'LVC74' ? [0, 0, 0] : []; }
   for (const [a, b] of ROWS) { a.mem.fill(0); b.mem.fill(0); } for (const c of RFCHIPS) c.mem.fill(0);
   const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0; mm.upc = mm.cs.addr.RESET;   // power-on: the RESET routine first
   code.forEach((v, i) => { mm.mem[i] = v; ramPut(i, v); });
+  if (opts.preload) for (const [a, v] of opts.preload(asm.symbols)) { mm.mem[a] = v; ramPut(a, v); }
+  const CAP = opts.cap || 20000;
   const mmWrites = new Set(); const mw = mm.memWrite.bind(mm); mm.memWrite = (a, v) => { mmWrites.add(mm.phys(a)); mw(a, v); };
   const s = new MachineSim(m); const POR = 12;
   for (let k = 0; k < POR; k++) s.microcycle(); s.set('POR', 0);
   let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null; const t0 = Date.now(); const trace = [];
   const bad = msg => { if (!fail) fail = { cyc, instr, msg }; };
-  while (!fail && !mm.halted && cyc < 20000) {
+  while (!fail && !mm.halted && cyc < CAP) {
     // one microcycle, slot by slot (as MachineSim.microcycle does), so the timing pass sees every slot
     let v = null; for (let j = 0; ; j++) { const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0;
       if (STA && lo.get('RESET') !== 1) STA.analyze(lo, mm.upc, { j, last });
@@ -162,7 +259,10 @@ function runOne(src, label) {
     const wantNext = mm.upc, gotNext = word(v, 'UA'), wb = irFetch ? mm.IR[lane] : flagIdle ? mm.lastAlu : mm.lastBus === undefined ? 0 : mm.lastBus, gb = busOf(v);
     trace.push(`${cyc}: UPC ${got}/${want} UA ${gotNext}/${wantNext} bus ${gb}/${mm.lastBus === undefined ? '-' : mm.lastBus}`); if (trace.length > 12) trace.shift();
     if (got !== want) bad(`UPC ${got} vs upc ${want}`); else if (gotNext !== wantNext && !mm.halted) bad(`UA ${gotNext} vs next ${wantNext}`);
-    else if (gb !== wb) bad(`bus ${gb} vs ${wb}`);
+    // an aborted cycle (the address unit faulted it): the microsim stops before its bus; the cards still drive what the
+    // word asked for (e.g. PUSH's register read), with every load and write blocked by ABORT. The bus is a don't-care
+    // there; any damage would show in the registers, PC or memory at the next boundary.
+    else if (gb !== wb && !aborted) bad(`bus ${gb} vs ${wb}`);
     for (const [k, x] of Object.entries(modeWant)) if (v.get(k) !== x) bad(`${k} ${v.get(k)} vs ${x}`);
     if (r === 'END') { instr++;
       for (let sl = 0; sl < 32; sl++) { const g = slotVal(sl); if (g !== mm.rf[sl]) { bad(`register slot ${sl}: ${g} vs ${mm.rf[sl]}`); break; } }
@@ -174,19 +274,22 @@ function runOne(src, label) {
   }
   if (!fail) for (const [a, b] of ROWS) for (let i = 0; i < a.mem.length; i++) if (a.mem[i] || b.mem[i]) {
     const x = unloc(ROWREF.get(a.ref), i); if (dec(a.mem[i] + b.mem[i] * 65536, 9) !== mm.mem[x]) { fail = { cyc, instr, msg: `final audit: RAM ${x}` }; break; } }
-  if (!fail && !mm.halted) fail = { cyc, instr, msg: 'did not halt in 20000 microcycles' };
+  const capped = !fail && !mm.halted; if (capped && !opts.capOk) fail = { cyc, instr, msg: `did not halt in ${CAP} microcycles` };
+  if (opts.stats) opts.stats(mm);
   if (fail) { console.log(trace.join('\n'));
     // who drives the bus right now (diagnostics only): every chip whose output pin on a D rail is high
     const who = new Set(), v = s.v; const { P } = require('../cards/parts.js');
     for (const c of m.chips) P[c.part].eval(c, pin => v.get(c.pins[pin]) ?? 0, (pin, x) => { const n = c.pins[pin]; if (n && /^D\d+[+-]$/.test(n) && x === 1) who.add(`${c.ref}.${pin}->${n}`); }, pin => v.get(c.pins[pin]) ?? 'Z');
     console.log('bus drivers high:', [...who].slice(0, 12).join(' ') || 'none'); }
-  console.log(`${label}: ${instr} instructions, ${cyc} microcycles, ${(Date.now() - t0) / 1000 | 0} s: ${fail ? `FAIL at microcycle ${fail.cyc} (instruction ${fail.instr}): ${fail.msg}` : 'match'}`);
+  console.log(`${label}: ${instr} instructions, ${cyc} microcycles, ${(Date.now() - t0) / 1000 | 0} s: ${fail ? `FAIL at microcycle ${fail.cyc} (instruction ${fail.instr}): ${fail.msg}` : capped ? 'match (ran to the cap)' : 'match'}`);
   return !fail;
 }
 
 if (Object.keys(MUT).length) console.log('MUTANT', JSON.stringify(MUT));
 let ok = 0, n = 0;
 if (WHICH === 'directed') { n = 1; ok += runOne(DIRECTED, 'directed'); }
+else if (WHICH === 'traps') { n = 1; ok += runOne(TRAPS, 'traps', { ...trapOpts, stats: mm => console.log(`  traps taken: ECAUSE ${mm.sprRead(12)}, final PRIV ${mm.priv}, halted ${mm.halted}`) }); }
+else if (WHICH === 'trapsrandom') for (let p = 0; p < NPROG; p++) { n++; const g = genTraps(); if (runOne(g.src, `traps ${p}${g.user ? ' (user mode)' : ''}`, g.opts)) ok++; else { console.log(g.src); break; } }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);

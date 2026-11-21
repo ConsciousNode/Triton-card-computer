@@ -50,3 +50,56 @@ The directed program grew after these runs (full-ripple ADDI/SUBI/NEG, and an AD
 for the timing pass). Its final version also matches: "directed: 67 instructions, 794 microcycles: match", in
 RESULTS-timing-sim.txt (the timing runs are lockstep runs too). The random runs used the same comparisons; the script's
 microcycle loop was later rewritten slot by slot (as MachineSim.microcycle does it) for the timing hooks.
+
+## stage 3 part 1: traps (2026-11-21)
+## none
+  traps taken: ECAUSE 7, final PRIV 0, halted true
+traps: 90 instructions, 727 microcycles, 130 s: match
+program-lockstep: 1/1 programs match
+## Registers:ABORT_IGNORED
+  traps taken: ECAUSE 3, final PRIV 1, halted false
+traps: 54 instructions, 396 microcycles, 66 s: FAIL at microcycle 396 (instruction 54): bus 6001 vs 5998
+program-lockstep: 0/1 programs match
+## ALU:ESRV_PRIV_IE_SWAPPED
+  traps taken: ECAUSE 3, final PRIV 1, halted false
+traps: 54 instructions, 398 microcycles, 68 s: FAIL at microcycle 398 (instruction 54): bus 82 vs 28
+program-lockstep: 0/1 programs match
+### mutants on the first version of the trap program (CHK3_USES_SINGLE, MAR_IGNORES_ABORT and ABORT_IGNORED survived it; the program was extended)
+## Control:TRAP_BAD_WIRED_WRONG
+traps: 16 instructions, 110 microcycles, 19 s: FAIL at microcycle 110 (instruction 16): UA 436 vs next 435
+program-lockstep: 0/1 programs match
+## Control:PSW_ENTER_IGNORED
+traps: 44 instructions, 347 microcycles, 58 s: FAIL at microcycle 347 (instruction 44): PRIV 1 vs 0
+program-lockstep: 0/1 programs match
+## Memory:WRITE_NOT_BLOCKED
+traps: 45 instructions, 352 microcycles, 63 s: FAIL at microcycle 352 (instruction 45): chip Memory.U240 wrote address 7000, which the microsim did not write
+program-lockstep: 0/1 programs match
+## Memory:FK_INVERTED
+traps: 16 instructions, 110 microcycles, 21 s: FAIL at microcycle 110 (instruction 16): UA 430 vs next 435
+program-lockstep: 0/1 programs match
+## Memory:CHK3_USES_SINGLE
+traps: 67 instructions, 568 microcycles, 107 s: match
+program-lockstep: 1/1 programs match
+## Memory:MAR_IGNORES_ABORT
+traps: 67 instructions, 568 microcycles, 97 s: match
+program-lockstep: 1/1 programs match
+## Registers:ABORT_IGNORED
+## ALU:ESRV_PRIV_IE_SWAPPED
+traps: 48 instructions, 365 microcycles, 132 s: FAIL at microcycle 365 (instruction 48): bus 82 vs 28
+program-lockstep: 0/1 programs match
+### mutants on the second version
+## none
+traps: 82 instructions, 679 microcycles, 123 s: match
+program-lockstep: 1/1 programs match
+## Memory:CHK3_USES_SINGLE
+traps: 55 instructions, 419 microcycles, 73 s: FAIL at microcycle 419 (instruction 55): UA 98 vs next 430
+program-lockstep: 0/1 programs match
+## Memory:MAR_IGNORES_ABORT
+traps: 82 instructions, 679 microcycles, 117 s: match
+program-lockstep: 1/1 programs match
+## Registers:ABORT_IGNORED
+traps: 82 instructions, 679 microcycles, 119 s: match
+program-lockstep: 1/1 programs match
+## ALU:ESRV_PRIV_IE_SWAPPED
+traps: 48 instructions, 365 microcycles, 68 s: FAIL at microcycle 365 (instruction 48): bus 82 vs 28
+program-lockstep: 0/1 programs match
