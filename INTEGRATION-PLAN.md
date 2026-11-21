@@ -78,11 +78,18 @@ could pass every card test. The Registers card's test catching a Control card fa
       DISPATCH_BIT_SWAP). The first directed program missed CARRY_SKIP: its adds never carried from slice 3 into
       slice 4. It now has adds that do, and it catches it.
     - Results are in `integration/RESULTS-program-lockstep.txt`.
-  - **Finding 4: the ISA's reset values for SP (200000) and ULIMIT (4782969) come from nowhere.** Register RAM has no
-    reset. Every program here starts with a boot prologue: ULIMIT by MTSPR, then SP through IRET (EPC = next
-    instruction, ESP = 200000, ESR = 0). **Decision for Kham:** keep the prologue as the boot ROM's job, or add a
-    microcoded reset routine at µaddress 0 that writes both slots. ULIMIT = CONST 243 through the L9 shift;
-    SP = 10 · 3^9 + 3170 takes an add. That's a few microwords, and every reset would honor the ISA.
+  - **Finding 4: the ISA's reset values for SP (200000) and ULIMIT (4782969) came from nowhere.** Register RAM has no
+    reset. **Fixed (Kham's decision: the microcode sets them, and the boot ROM may still change ULIMIT):**
+    - A 6-word RESET routine (`microsim.js`): ULIMIT = CONST 243 through the L9 shift; SP = 10 · 3^9 + 3170.
+    - It is appended at the end of the store (words 535–540), so no other address moved. Only those six words changed
+      in the ROM images; dispatch and ALU are unchanged.
+    - **The reset vector:** during RESET the pulled-up control word reads as HALT + RETIRE + CFETCH, which no real word
+      has. The next-address table sends it to fixed address 3 = RESET. Before, that slot was an unused FETCH.
+    - **Tests:** the whole-machine runs now start from power-on into the routine, with no prologue. Directed: 57
+      instructions, 740 microcycles, match. Random: 4/4 match. Mutant Control:NO_RESET_VECTOR fails at the first
+      microcycle.
+    - The Control card's own test builds with resetToFetch (declared: its programs preset state). Directed, irqbm,
+      spr and fetchfault: 0 mismatches. verify-roms: TritOS 2.1 self-hosting, 0 mismatches.
   - **Two checker corrections (not hardware bugs):**
     - An instruction fetch puts the tryte on the bus. The Memory card drives it and the Control card's IR loads from
       the bus.
@@ -99,7 +106,7 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **Marginal:** three 25 ns paths, all depending on datasheet numbers not yet verified.
   - **Positive control:** with 30 ns tables, the timing fails as it must. The timing simulation's self-test shows 0
     differing nets on every run.
-- **Next:** decide /WSTB and the reset values; then stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
+- **Next:** /WSTB and the STRETCH driver (Kham: yes); then stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
   and the POOP OK boot.
 
 ## Stage 1: compose the cards

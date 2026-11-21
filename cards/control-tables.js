@@ -13,7 +13,7 @@ const SEQK = ['NEXT', 'JUMP', 'DISPATCH', 'BR', 'BRN', 'FETCH', 'WAIT', 'HALT'];
 const CONDK = ['SFN', 'SFZ', 'SFP', 'CFNZ', 'CNTZ', 'QTZ', 'BTOPZ', 'IORDY', 'IRQ', 'USER', 'T2', 'DIV0', 'BADADDR', 'PROT', 'ALIAS'];
 
 // NEXT-ADDRESS table. addr: SEQK(3) | cond<<3 | ABORT<<4 | FK<<5 (1 = protection) | RETIRE<<6 | CONSTFETCH<<7 | IRQN<<8 | IORDY<<9
-// data: MSEL(2: 0 INC/HOLD table, 1 CONST, 2 DISPATCH, 3 FIXED) | FIX(2: 0 FETCH, 1 TRAP_PROT, 2 TRAP_BAD)<<2 | HOLD<<4 | HALT<<5
+// data: MSEL(2: 0 INC/HOLD table, 1 CONST, 2 DISPATCH, 3 FIXED) | FIX(2: 0 FETCH, 1 TRAP_PROT, 2 TRAP_BAD, 3 RESET)<<2 | HOLD<<4 | HALT<<5
 function naTable() { const m = B19();
   for (let a = 0; a < 1024; a++) {
     const seq = SEQK[a & 7], cond = (a >> 3) & 1, abort = (a >> 4) & 1, fk = (a >> 5) & 1, ret = (a >> 6) & 1, cfetch = (a >> 7) & 1, irqn = (a >> 8) & 1, iordy = (a >> 9) & 1;
@@ -27,7 +27,10 @@ function naTable() { const m = B19();
       case 'BRN': if (!cond) { msel = 1; toFetch = !!cfetch; } break;
       case 'FETCH': msel = 3; fix = 0; toFetch = true; break;
       case 'WAIT': if (!iordy) hold = 1; break;
-      case 'HALT': msel = 3; fix = 0; halt = 1; toFetch = true; break; }
+      // during RESET the pipeline's outputs are off and pulled up: the word reads as HALT with RETIRE and CFETCH set.
+      // No real word has that (CFETCH is only set on JUMP/BR/BRN to FETCH), so it is the reset vector: fixed address 3,
+      // the RESET routine (microsim.js), not a halt.
+      case 'HALT': if (ret && cfetch) { msel = 3; fix = 3; toFetch = true; } else { msel = 3; fix = 0; halt = 1; toFetch = true; } break; }
       // the step-boundary redirect: a RETIRE word ends a step; if an interrupt is pending at the boundary, go to FETCH
       if (ret && !toFetch && irqn && !halt) { msel = 3; fix = 0; hold = 0; } }
     m[a] = msel | fix << 2 | hold << 4 | halt << 5; }

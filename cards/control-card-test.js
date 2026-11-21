@@ -17,7 +17,10 @@ const fixed = (() => { const m = new MicroMachine(); return { FETCH: m.cs.addr.F
 const nCS = Math.ceil(CW.length / 8), cs = Array.from({ length: nCS }, () => Buffer.alloc(1024));
 for (let w = 0; w < 1024; w++) { let b = 0n; for (let k = 0; k < chips.length; k++) b |= BigInt(chips[k][w]) << BigInt(8 * k);
   let mu; try { mu = decodeWord(b); } catch { continue; } const cw = cardWord(mu, w, fixed); for (let j = 0; j < nCS; j++) cs[j][w] = Number((cw >> BigInt(8 * j)) & 255n); }
-const MUT = process.env.CTL_MUTANT; const card = build(ROMS, cs, MUT).check();
+// Declared (2026-11-20): this test's programs preset the machine's state and start at FETCH, so the card is built with
+// its reset vector at FETCH (resetToFetch). The real vector (the RESET routine) is tested on the whole machine:
+// integration/program-lockstep.js runs from power-on, and mutant Control:NO_RESET_VECTOR must fail there.
+const MUT = process.env.CTL_MUTANT; const card = build(ROMS, cs, MUT, { resetToFetch: true }).check();
 console.log('Control card BOM:', JSON.stringify(card.bom()), `= ${card.chips.length} chips`); if (MUT) console.log('MUTANT', MUT);
 
 const toT = (v, n) => { const t = []; let x = v; for (let i = 0; i < n; i++) { let r = ((x % 3) + 3) % 3; if (r === 2) r = -1; t.push(r); x = (x - r) / 3; } return t; };

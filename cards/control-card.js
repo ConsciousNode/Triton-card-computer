@@ -13,7 +13,7 @@ const CW = ['SQ0', 'SQ1', 'SQ2', 'CFETCH', 'RET', 'CD0', 'CD1', 'CD2', 'CD3', ..
   'UOP0', 'UOP1', 'BS0', 'BS1', '/CBUSOE', '/UPEN', 'SPRWR', 'SPR', 'RFBUS', 'PSW0', 'PSW1', 'ACK', 'BT0', 'BT1'];
 const TBL = require('./control-tables.js');
 
-function build(romsDir, csImages, mutant) {
+function build(romsDir, csImages, mutant, { resetToFetch = false } = {}) {
   const c = new Card('Control');
   c.input('CLK', 'RESET', 'ABORT', 'FK', 'SF+', 'SF-', 'QT+', 'QT-', 'BTOPNZ', 'BADADDR', 'IORDY', 'IRQSET0', 'IRQSET1', 'IRQSET2', 'IRQSET3', 'IRQSET4');
   for (let k = 0; k < 27; k++) c.input(T(`D${k}`, 0), T(`D${k}`, 1));
@@ -73,7 +73,13 @@ function build(romsDir, csImages, mutant) {
   const ua = [...Array(10).keys()].map(i => oldUA ? `UA${i}` : `UPC${i}`);   // the incrementer counts from the executing word's address
   sram('U30', [...ua, 'HOLD'], [...Array(8).keys()].map(i => `INC${i}`), ilo);
   sram('U31', [...ua, 'HOLD'], ['INC8', 'INC9'], ihi);
-  const fixed = [0, 430, 435, 0];                                       // FETCH, TRAP_PROT, TRAP_BAD (wired constants, as roms.js)
+  // FETCH, TRAP_PROT, TRAP_BAD, RESET: wired constants (as roms.js), read from the microcode build so they can't drift.
+  // RESET (2026-11-20) is where the pulled-up control word goes during RESET (control-tables.js naTable).
+  // resetToFetch: the Control card's own test runs programs that preset the machine's state and start at FETCH, so it
+  // builds the card with the reset vector at FETCH (declared in that test); the whole-machine runs use the real one.
+  const A = require('../microsim/microsim.js').buildStore().addr;
+  const fixed = [A.FETCH, A.TRAP_PROT, A.TRAP_BAD, resetToFetch || mutant === 'NO_RESET_VECTOR' ? A.FETCH : A.RESET];
+  if (fixed[0] !== 0 || fixed[1] !== 430 || fixed[2] !== 435) throw new Error('fixed microcode addresses moved: ' + fixed);
   if (mutant === 'TRAP_BAD_WIRED_WRONG') fixed[2] = 436;
   for (let j = 0; j < 5; j++) { const pins = { S0: 'FX0', S1: 'FX1', '1/E': 'GND', '2/E': 'GND' };
     for (const h of [1, 2]) { const b = 2 * j + h - 1; for (let s = 0; s < 4; s++) pins[`${h}I${s}`] = (fixed[s] >> b) & 1 ? 'VCC' : 'GND'; pins[`${h}Y`] = `FIX${b}`; }

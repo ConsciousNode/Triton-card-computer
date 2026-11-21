@@ -9,7 +9,7 @@ const { compose } = require('./integrate.js'); const { MachineSim } = require('.
 const { MicroMachine } = require('../microsim/microsim.js'); const { trit } = require('../cards/netlist.js');
 const N = +(process.argv[2] || 200), POR = +(process.argv[3] || 12);
 const MUT = process.env.MACHINE_MUTANT ? Object.fromEntries([process.env.MACHINE_MUTANT.split(':')]) : {};   // e.g. Control:LATCH_NO_RESET
-const m = compose({ mutants: MUT }), s = new MachineSim(m), mm = new MicroMachine();
+const m = compose({ mutants: MUT }), s = new MachineSim(m), mm = new MicroMachine(); mm.upc = mm.cs.addr.RESET; mm.rf[require('../microsim/microsim.js').SLOT.ULIMIT] = 0;   // power-on: the RESET routine first (2026-11-20)
 const word = (v, pfx) => { let x = 0; for (let i = 9; i >= 0; i--) x = 2 * x + (v.get(`${pfx}${i}`) | 0); return x; };
 const ua = v => word(v, 'UA'), upcOf = v => word(v, 'Control:UPC');
 const bus = v => { let x = 0; for (let k = 26; k >= 0; k--) { const p = v.get(`D${k}+`), q = v.get(`D${k}-`); if (p && q) return NaN; x = 3 * x + trit(p, q); } return x; };

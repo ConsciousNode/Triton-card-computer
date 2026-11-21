@@ -16,10 +16,10 @@
 //     wrote, holding the microsim's value;
 //   - at the end: a full audit of every RAM row against the microsim's memory.
 // Power-up: register RAM has no reset, so its contents are undefined in hardware. Both machines start it at zero here
-// (the microsim's constructor sets ULIMIT = ramSize; that slot is zeroed to match). ISA-3/4 give SP (200000) and
-// ULIMIT (4782969) reset values that nothing in the hardware produces (stage 2 finding, INTEGRATION-PLAN.md), so every
-// program starts with BOOT, the software prologue a boot ROM would run: ULIMIT by MTSPR, then SP through IRET
-// (EPC = the next instruction, ESP = 200000, ESR = 0: supervisor, interrupts off, flags clear).
+// (the microsim's constructor sets ULIMIT = ramSize; that slot is zeroed to match). Then both run the RESET routine
+// (microsim.js, since 2026-11-20): the netlist gets there through its reset vector, the microsim is started there. It
+// writes the ISA's reset values of ULIMIT and SP, so the programs need no prologue. (Before the routine existed, every
+// program began with a BOOT prologue; that was finding 4 in INTEGRATION-PLAN.md.)
 //
 // Usage: node program-lockstep.js [directed|random] [programs] [seed]
 //   MACHINE_MUTANT=Card:NAME  build the machine with one card mutant (the run must fail)
@@ -48,18 +48,7 @@ const dec = (b, n) => { let x = 0; for (let i = n - 1; i >= 0; i--) { const p = 
 // ---- end of lift
 
 // ---- programs. No I/O instructions here (stage 3 brings the I/O card's programs); no user mode or traps yet.
-const BOOT = `${ld('R0', 4782969)}
-  MTSPR R0, #7
-${ld('R0', 200000)}
-  MTSPR R0, #10
-  LI R0, #0
-  MTSPR R0, #11
-  LI R0, #booted
-  MTSPR R0, #9
-  IRET
-booted:
-`;
-const DIRECTED = BOOT + `
+const DIRECTED = `
 ${ld('R1', 581130733)}
   ADDI R3, R1, #1
   SUBI R4, R3, #1
@@ -108,7 +97,7 @@ sub:
 function genRandom() {
   const n = ri(12, 40), lines = [];
   const R = () => 'R' + ri(0, 6), imm = () => pick([0, 1, -1, 9841, -9841, ri(-9841, 9841), ri(-50, 50)]);
-  // jump targets are labels L0..Ln (line i is label Li, Ln the HALT), so the BOOT prologue can sit in front
+  // jump targets are labels L0..Ln (line i is label Li, Ln the HALT), so a line can sit in front
   for (let i = 0; i < n; i++) { const k = rnd(), fwd = () => 'L' + ri(i + 1, n);
     if (k < 0.30) lines.push(`${pick(['ADD', 'ADC', 'SUB', 'SBC', 'TMIN', 'TMAX', 'TCON', 'TANY', 'TXOR', 'MUL', 'DIV', 'MOD'])} ${R()}, ${R()}, ${R()}`);
     else if (k < 0.42) lines.push(`${pick(['ADDI', 'SUBI', 'MULI', 'TUNARY'])} ${R()}, ${R()}, #${imm()}`);
@@ -120,7 +109,7 @@ function genRandom() {
     else if (k < 0.84) lines.push(rnd() < 0.5 ? `PUSH ${R()}` : `POP ${R()}`);
     else if (k < 0.94) lines.push(`${pick(['JMP', 'JN', 'JZ', 'JP', 'JNZ', 'JNP', 'JNN'])} ${fwd()}`);
     else lines.push(`CALL L${i + 1}`); }
-  lines.push('HALT'); return BOOT + '  LI R8, #5000\n' + lines.map((l, i) => `L${i}: ${l}`).join('\n');
+  lines.push('HALT'); return '  LI R8, #5000\n' + lines.map((l, i) => `L${i}: ${l}`).join('\n');
 }
 
 // ---- one program on a fresh machine
@@ -146,7 +135,7 @@ function runOne(src, label) {
   // fresh state on the same composed netlist: every register, RAM and status bit back to its power-up value
   for (const c of m.chips) { if (c.q) c.q = c.part === 'LVC74' ? [0, 0, 0] : []; }
   for (const [a, b] of ROWS) { a.mem.fill(0); b.mem.fill(0); } for (const c of RFCHIPS) c.mem.fill(0);
-  const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0;
+  const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0; mm.upc = mm.cs.addr.RESET;   // power-on: the RESET routine first
   code.forEach((v, i) => { mm.mem[i] = v; ramPut(i, v); });
   const mmWrites = new Set(); const mw = mm.memWrite.bind(mm); mm.memWrite = (a, v) => { mmWrites.add(mm.phys(a)); mw(a, v); };
   const s = new MachineSim(m); const POR = 12;

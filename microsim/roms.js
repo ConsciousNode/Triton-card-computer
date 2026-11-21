@@ -78,7 +78,7 @@ function romMachine(dir, ramSize) {
   for (let op = -121; op <= 121; op++) { dispatch.set(op, disp[(243 + op + 121) * 2] | disp[(243 + op + 121) * 2 + 1] << 8);
     dispatchT2.set(op, disp[(op + 121) * 2] | disp[(op + 121) * 2 + 1] << 8); }
   // fixed addresses the sequencer/fault/interrupt hardware jumps to (wired, like a reset vector)
-  const addr = {}; for (const k of ['FETCH', 'FETCH2', 'TRAP_PROT', 'TRAP_BAD', 'TRAP_ILL', 'T2_HALT', 'IRQ_ENTRY']) addr[k] = ref.addr[k];
+  const addr = {}; for (const k of ['FETCH', 'FETCH2', 'TRAP_PROT', 'TRAP_BAD', 'TRAP_ILL', 'T2_HALT', 'IRQ_ENTRY', 'RESET']) addr[k] = ref.addr[k];
   m.cs = { store, addr, dispatch, dispatchT2 };
   m.aluImpl = (fn, A, B, neg, cin, bcast) => {   // 9 slice lookups, carry rippling from slice to slice
     const fi = ALU_FNS.indexOf(fn), ta = toTrits(A, 27), tb = toTrits(B, 27); let c = cin, out = 0;

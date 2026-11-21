@@ -439,6 +439,18 @@ for (const n of ['NOP', 'LI', 'LUI', 'MOV', 'ADD', 'ADDI', 'ADC', 'SUB', 'SUBI',
   'JMP', 'JN', 'JZ', 'JP', 'JNZ', 'JNP', 'JNN', 'JR', 'MTSPR', 'CMP', 'CMPI', 'TMIN', 'TMAX', 'TCON', 'TANY', 'TXOR', 'TUNARY', 'SHL', 'SHLI', 'SHR', 'SHRI'])
   T2_MAP[n] = n;
 
+// RESET (2026-11-20, integration stage 2): register RAM has no reset, so the ISA's reset values for ULIMIT (4782969, the
+// RAM size) and SP (200000) are written here, before the first fetch. The hardware reaches this routine through the
+// sequencer's fourth fixed address: during RESET the pulled-up control word reads as HALT with RETIRE and CFETCH set,
+// which no real word has, and the next-address table sends that to it. It is the last routine in the store, so no other
+// address moves. The microsim itself still starts at FETCH (diff.js presets its state); the whole-machine runs start
+// here. A boot ROM may overwrite ULIMIT afterwards (MTSPR #7) when it finds more RAM.
+MICRO.RESET = [U({ BUS: 'CONST', CONST: 243, LD_A: 1 }),                                     // 243 * 3^9 = 4782969
+  U({ ALU_FN: 'PASSA', SHIFT: 'L9', BUS: 'ALU', RF_SEL: 'CONST', CONST: S.ULIMIT, RF_WR: 1 }),
+  U({ BUS: 'CONST', CONST: 10, LD_A: 1 }), U({ ALU_FN: 'PASSA', SHIFT: 'L9', BUS: 'ALU', LD_A: 1 }),   // 10 * 3^9 = 196830
+  U({ BUS: 'CONST', CONST: 3170, LD_B: 1 }),
+  U({ ALU_FN: 'ADD', BUS: 'ALU', RF_SEL: 'CONST', CONST: S.SP, RF_WR: 1, SEQ: 'FETCH' })];   // + 3170 = 200000
+
 // Positive controls: MICROSIM_MUTANT=<name> plants one known microcode bug; diff.js must catch each.
 const MUTANTS = {
   ADC_NO_CARRY: () => { MICRO.ADC[MICRO.ADC.length - 1].CIN = '0'; },
