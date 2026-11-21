@@ -111,6 +111,14 @@ could pass every card test. The Registers card's test catching a Control card fa
   - Timing simulation: 0 write violations (+34 ns worst), 0 CPU-register violations.
   - The mutants without the strobe or without the stretch both fail.
   - Details in `integration/TIMING-GATE-LEVEL.md`. Open: the framebuffer write path's strobe (Video's VBUSY timing).
+- **JPUSB (decided by Kham, 2026-11-20): its own card, after stage 3.**
+  - A seventh card with its own trit↔binary port interface (like the I/O card's).
+  - It takes the spare IRQSET3 and free port numbers.
+  - The steps:
+    1. Translate Neon's netlist into the card-computer part library, cross-checked against Neon's own tests.
+    2. Synchronize between its 48 MHz domain and SCLK.
+    3. Write the TritOS driver.
+    4. Run a whole-machine test with a simulated USB keyboard.
 - **Next:** stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
   and the POOP OK boot.
 
