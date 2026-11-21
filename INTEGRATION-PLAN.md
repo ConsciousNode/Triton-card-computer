@@ -205,7 +205,9 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **Fix:** a halt latch on the clock generator, using only spare gates: U206's spare half, U203 gate 3, U207 gate 2
     and U201 inverter 6. It captures HALTED | HALTQ on CLK and gates CEN's D input, so CLK stops at FETCH, where the
     microsim's HALT parks. RESET clears it at once, so the KERK panel's button restarts the machine. Interrupts don't
-    wake it (Kham may choose otherwise; it's one gate either way).
+    wake it. **Decided by Kham (2026-11-21): stays as is.** It matches the emulator, the microsim and TritOS, where
+    HALT is only the shell's quit (`shell_halt`), never idle. A low-power idle, if the handheld wants one, would be a
+    separate wait-for-interrupt instruction. No HALT lamp on the KERK panel.
   - **Tests:**
     - clockgen-test has a halt case (23/23), and HALT_IGNORED is caught (9/9 mutants);
     - every whole-machine run now checks, after HALT, that the machine parks at the microsim's micro-address and that
