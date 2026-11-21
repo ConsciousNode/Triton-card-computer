@@ -114,6 +114,9 @@ could pass every card test. The Registers card's test catching a Control card fa
 - **JPUSB (decided by Kham, 2026-11-20): its own card, after stage 3.**
   - A seventh card with its own trit↔binary port interface (like the I/O card's).
   - It takes the spare IRQSET3 and free port numbers.
+  - **Untrusted peripheral (Kham, 2026-11-21).** JPUSB never writes main memory. USB data lands only in JPUSB's own
+    buffer SRAM, and the CPU copies it out through the port registers. The driver treats every byte as hostile. So a
+    malicious USB device can only feed the driver bad bytes.
   - The steps:
     1. Translate Neon's netlist into the card-computer part library, cross-checked against Neon's own tests.
     2. Synchronize between its 48 MHz domain and SCLK.
