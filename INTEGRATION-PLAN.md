@@ -137,7 +137,8 @@ could pass every card test. The Registers card's test catching a Control card fa
     - **MAR_IGNORES_ABORT survives** on the whole machine. After a fault every trap path reloads MAR before using it,
       so I found no architectural effect. The Memory card's own test still catches it at the card.
   - **Random trap programs** (user and supervisor, SPR writes including mode switches, IRET, faulting loads and
-    stores, illegal opcodes) are running in `trapsrandom`. Results go in `RESULTS-program-lockstep.txt`.
+    stores, illegal opcodes): **8/8 match**, 1,621 instructions in all. Four user-mode programs ran to the
+    2,500-microcycle cap (trap loops); they were compared all the way there.
   - **One more checker correction:** on an aborted cycle the cards still drive the bus the word asked for (a register
     read, for instance), with every load and write blocked. The bus is a don't-care there; registers, PC and memory are
     still compared.

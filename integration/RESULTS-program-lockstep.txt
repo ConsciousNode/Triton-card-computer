@@ -103,3 +103,13 @@ program-lockstep: 1/1 programs match
 ## ALU:ESRV_PRIV_IE_SWAPPED
 traps: 48 instructions, 365 microcycles, 68 s: FAIL at microcycle 365 (instruction 48): bus 82 vs 28
 program-lockstep: 0/1 programs match
+### random trap programs (seed 20261120; capped at 2500 microcycles, a capped run is compared all the way to the cap)
+traps 0: 23 instructions, 124 microcycles, 22 s: match
+traps 1 (user mode): 293 instructions, 2500 microcycles, 446 s: match (ran to the cap)
+traps 2 (user mode): 292 instructions, 2500 microcycles, 442 s: match (ran to the cap)
+traps 3 (user mode): 66 instructions, 657 microcycles, 112 s: match
+traps 4 (user mode): 289 instructions, 2500 microcycles, 431 s: match (ran to the cap)
+traps 5: 30 instructions, 171 microcycles, 29 s: match
+traps 6: 53 instructions, 993 microcycles, 166 s: match
+traps 7 (user mode): 75 instructions, 1101 microcycles, 183 s: match
+program-lockstep: 8/8 programs match
