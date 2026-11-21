@@ -113,3 +113,14 @@ traps 5: 30 instructions, 171 microcycles, 29 s: match
 traps 6: 53 instructions, 993 microcycles, 166 s: match
 traps 7 (user mode): 75 instructions, 1101 microcycles, 183 s: match
 program-lockstep: 8/8 programs match
+
+## stage 3 part 2: the console, POOP OK (2026-11-21)
+  terminal: "POOP OK\r\n" (9 bytes, 0 framing errors); the CPU waited 7803 microcycles on IORDY
+POOP OK: 20 instructions, 7913 microcycles, 2279 s: match
+program-lockstep: 1/1 programs match
+### mutant IO:CON_NO_STALL (the console doesn't hold IORDY while it shifts): must fail
+MUTANT {"IO":"CON_NO_STALL"}
+  terminal: "\u0014" (1 bytes, 1 framing errors); the CPU waited 0 microcycles on IORDY
+bus drivers high: none
+POOP OK: 20 instructions, 110 microcycles, 424 s: FAIL at microcycle 110 (instruction 20): terminal received "\u0014", the microsim printed "POOP OK\r\n"
+program-lockstep: 0/1 programs match

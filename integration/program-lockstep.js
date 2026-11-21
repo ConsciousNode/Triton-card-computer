@@ -26,7 +26,7 @@
 const path = require('path');
 const { compose } = require('./integrate.js'); const { MachineSim } = require('./machine-sim.js');
 const { MicroMachine, SLOT } = require('../microsim/microsim.js'); const { trit, rails } = require('../cards/netlist.js');
-const { rowsFor } = require('../cards/memory-card.js'); const { ld } = require('../microsim/bare-drivers.js');
+const { rowsFor } = require('../cards/memory-card.js'); const { ld, PRNUM } = require('../microsim/bare-drivers.js'); const { BareIO, SdCard } = require('../microsim/bareio.js');
 const { Timing } = require('./sta.js'); const { TimingSim } = require('./timing-sim.js');
 // STA=table|cycle: time every slot's settled paths (sta.js). STA_SCALE=PART:factor slows one part (a positive control).
 const STA_SCALE = process.env.STA_SCALE ? Object.fromEntries([process.env.STA_SCALE.split(':').map((x, i) => i ? +x : x)]) : {}; let STA = null;
@@ -204,6 +204,29 @@ function genTraps() {
     patch: (c, sym) => { if (sym.ILLX !== undefined) c[sym.ILLX] = pick([56, 57, 80, 121, -14, -50, -121]) * 81 + ri(-4, 4) * 9 + ri(-4, 4); } } };
 }
 
+// ---- stage 3, part 2 (2026-11-21): I/O. The microsim runs BareIO (microsim/bareio.js), the model the I/O card was
+// built against; the netlist's I/O card talks to the world at its pins. Declared, as in cards/io-ports-test.js: the
+// microsim waits on a WAIT word exactly as long as the netlist holds IORDY low (the model has no wait of its own).
+// The world's serial terminal on CON_TX: a UART receiver at 115,200 baud, sampling mid-bit from the start bit's edge.
+// Lifted from cards/io-ports-test.js (Kehai Interim, 2026-11-19), uartSlot, unchanged except that errors are
+// collected instead of failing the run and the slot counter is passed in.
+const UB = 40e6 / 115200;
+function uart() { const ux = { st: 'idle', t0: 0, k: 0, byte: 0, prev: 1, text: '', framing: 0, lastStop: 0 };
+  ux.slot = (tx, G) => { if (ux.st === 'idle') { if (ux.prev === 1 && tx === 0) { ux.st = 'rx'; ux.t0 = G; ux.k = 0; ux.byte = 0; } }
+    else { const due = ux.t0 + Math.round(UB * (ux.k + 0.5));
+      if (G === due) { if (ux.k === 0) { if (tx !== 0) { ux.st = 'idle'; ux.framing++; } }
+        else if (ux.k <= 8) ux.byte |= tx << (ux.k - 1);
+        else { if (tx !== 1) ux.framing++; ux.text += String.fromCharCode(ux.byte); ux.st = 'idle'; ux.lastStop = G; }
+        ux.k++; } }
+    ux.prev = tx; };
+  return ux; }
+const say = t => [...t].map(ch => `LI R1, #${ch.charCodeAt(0)}\nOUT R1, #0`).join('\n');
+const POOP = `${say('POOP OK\r\n')}\n  HALT\n`;
+const CONSOLE = `${say('POOP OK\r\n')}
+${[0, 7, -1, 42, -9841, 1234567].map(v => `${ld('R1', v)}\n  CALLX PRNUM\n  LI R1, #32\n  OUT R1, #0`).join('\n')}
+  HALT
+${PRNUM}`;
+
 // ---- one program on a fresh machine
 const m = compose({ mutants: MUT }); const chip = new Map(m.chips.map(c => [c.ref, c]));
 if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.STA });   // STA=table or STA=cycle
@@ -231,6 +254,8 @@ function runOne(src, label, opts = {}) {
   for (const c of m.chips) { if (c.q) c.q = c.part === 'LVC74' ? [0, 0, 0] : []; }
   for (const [a, b] of ROWS) { a.mem.fill(0); b.mem.fill(0); } for (const c of RFCHIPS) c.mem.fill(0);
   const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0; mm.upc = mm.cs.addr.RESET;   // power-on: the RESET routine first
+  if (opts.io) mm.io = new BareIO(mm, new SdCard(4));
+  const term = uart(); let G = 0, waited = 0;
   code.forEach((v, i) => { mm.mem[i] = v; ramPut(i, v); });
   if (opts.preload) for (const [a, v] of opts.preload(asm.symbols)) { mm.mem[a] = v; ramPut(a, v); }
   const CAP = opts.cap || 20000;
@@ -241,14 +266,16 @@ function runOne(src, label, opts = {}) {
   const bad = msg => { if (!fail) fail = { cyc, instr, msg }; };
   while (!fail && !mm.halted && cyc < CAP) {
     // one microcycle, slot by slot (as MachineSim.microcycle does), so the timing pass sees every slot
-    let v = null; for (let j = 0; ; j++) { const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0;
+    let v = null; for (let j = 0; ; j++) { const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0; term.slot(lo.get('CON_TX'), G++);
       if (STA && lo.get('RESET') !== 1) STA.analyze(lo, mm.upc, { j, last });
       if (TS && prevLo && lo.get('RESET') !== 1) TS.analyze(prevLo, lo, mm.upc, { j, last }); prevLo = lo;
       if (last) { v = lo; break; } if (j > 16) throw new Error('no CPU edge'); }
     if (v.get('RESET') === 1) continue;
     if (pendingPc !== null) { const g = pcOf(); if (g !== pendingPc) bad(`PC ${g} vs ${pendingPc}`); pendingPc = null; }
     const modeWant = { MODE: mm.mode, PRIV: mm.priv, IE: mm.ie, PROTEN: mm.protEn };
-    const want = mm.upc, got = word(v, 'Control:UPC'), mu = mm.cs.store[mm.upc]; mm.lastBus = ABORTED; const r = mm.cycle(); cyc++;
+    const want = mm.upc, got = word(v, 'Control:UPC'), mu = mm.cs.store[mm.upc];
+    if (mu.SEQ === 'WAIT') { mm.ioWait = v.get('IORDY') === 1 ? 0 : 1; waited += mm.ioWait; }   // declared: the card's wait
+    mm.lastBus = ABORTED; const r = mm.cycle(); cyc++;
     const aborted = mm.lastBus === ABORTED; if (aborted) mm.lastBus = undefined;
     // an instruction fetch puts the tryte on the bus (the Memory card drives it, the Control card's IR loads from it);
     // the microsim loads IR straight from memory, so the expected bus value is the tryte it fetched
@@ -275,6 +302,12 @@ function runOne(src, label, opts = {}) {
   if (!fail) for (const [a, b] of ROWS) for (let i = 0; i < a.mem.length; i++) if (a.mem[i] || b.mem[i]) {
     const x = unloc(ROWREF.get(a.ref), i); if (dec(a.mem[i] + b.mem[i] * 65536, 9) !== mm.mem[x]) { fail = { cyc, instr, msg: `final audit: RAM ${x}` }; break; } }
   const capped = !fail && !mm.halted; if (capped && !opts.capOk) fail = { cyc, instr, msg: `did not halt in ${CAP} microcycles` };
+  // the terminal: after HALT the last character may still be on the wire; run on until the line has been quiet for
+  // two character times, then the terminal must hold exactly what the microsim's console printed
+  if (opts.io && !fail) { let k = 0; while (k++ < 16000 && !(term.st === 'idle' && G - term.lastStop > 2 * 10 * UB)) { const { lo } = s.slot(); term.slot(lo.get('CON_TX'), G++); }
+    if (term.text !== mm.io.consoleOut) fail = { cyc, instr, msg: `terminal received ${JSON.stringify(term.text)}, the microsim printed ${JSON.stringify(mm.io.consoleOut)}` };
+    else if (term.framing) fail = { cyc, instr, msg: `${term.framing} framing errors` };
+    console.log(`  terminal: ${JSON.stringify(term.text)} (${term.text.length} bytes, ${term.framing} framing errors); the CPU waited ${waited} microcycles on IORDY`); }
   if (opts.stats) opts.stats(mm);
   if (fail) { console.log(trace.join('\n'));
     // who drives the bus right now (diagnostics only): every chip whose output pin on a D rail is high
@@ -290,6 +323,8 @@ let ok = 0, n = 0;
 if (WHICH === 'directed') { n = 1; ok += runOne(DIRECTED, 'directed'); }
 else if (WHICH === 'traps') { n = 1; ok += runOne(TRAPS, 'traps', { ...trapOpts, stats: mm => console.log(`  traps taken: ECAUSE ${mm.sprRead(12)}, final PRIV ${mm.priv}, halted ${mm.halted}`) }); }
 else if (WHICH === 'trapsrandom') for (let p = 0; p < NPROG; p++) { n++; const g = genTraps(); if (runOne(g.src, `traps ${p}${g.user ? ' (user mode)' : ''}`, g.opts)) ok++; else { console.log(g.src); break; } }
+else if (WHICH === 'poop') { n = 1; ok += runOne(POOP, 'POOP OK', { io: true, cap: 20000 }); }
+else if (WHICH === 'console') { n = 1; ok += runOne(CONSOLE, 'console', { io: true, cap: 60000 }); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);
