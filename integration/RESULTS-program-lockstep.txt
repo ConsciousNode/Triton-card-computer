@@ -1,0 +1,52 @@
+# program-lockstep.js results, 2026-11-20 (Kehai Interim). Raw output, trimmed of per-microcycle trace lines.
+
+## directed
+directed: 57 instructions, 739 microcycles, 115 s: match
+program-lockstep: 1/1 programs match
+
+## random 12 (seed 20261120)
+random 0: 14 instructions, 74 microcycles, 11 s: match
+random 1: 37 instructions, 262 microcycles, 41 s: match
+random 2: 22 instructions, 126 microcycles, 19 s: match
+random 3: 49 instructions, 719 microcycles, 115 s: match
+random 4: 29 instructions, 372 microcycles, 50 s: match
+random 5: 41 instructions, 453 microcycles, 66 s: match
+random 6: 20 instructions, 121 microcycles, 21 s: match
+random 7: 23 instructions, 185 microcycles, 27 s: match
+random 8: 41 instructions, 609 microcycles, 91 s: match
+random 9: 30 instructions, 496 microcycles, 73 s: match
+random 10: 35 instructions, 256 microcycles, 38 s: match
+random 11: 27 instructions, 169 microcycles, 24 s: match
+program-lockstep: 12/12 programs match
+
+## mutants (directed program; each must fail)
+## ALU:CARRY_SKIP
+directed: 16 instructions, 164 microcycles, 26 s: FAIL at microcycle 164 (instruction 16): bus 290737593 vs 290560446
+program-lockstep: 0/1 programs match
+## ALU:RAILS_SWAPPED_R7
+directed: 6 instructions, 32 microcycles, 5 s: FAIL at microcycle 32 (instruction 5): bus 195626 vs 200000
+program-lockstep: 0/1 programs match
+## Registers:SLOT_BITS_SWAPPED
+directed: 2 instructions, 10 microcycles, 3 s: FAIL at microcycle 10 (instruction 2): register slot 29: 2 vs 0
+program-lockstep: 0/1 programs match
+## Memory:CHUNK_OFF_BY_ONE
+directed: 20 instructions, 306 microcycles, 45 s: FAIL at microcycle 306 (instruction 20): bus 0 vs 2
+program-lockstep: 0/1 programs match
+## Memory:MDR_LANE_RAILS
+directed: 5 instructions, 26 microcycles, 3 s: FAIL at microcycle 26 (instruction 4): bus 160634 vs 200000
+program-lockstep: 0/1 programs match
+## Control:PC_CARRY_SKIP
+directed: 7 instructions, 37 microcycles, 5 s: FAIL at microcycle 36 (instruction 7): PC 743 vs 14
+program-lockstep: 0/1 programs match
+## Control:COND_IGNORED
+directed: 16 instructions, 233 microcycles, 45 s: FAIL at microcycle 233 (instruction 16): UA 244 vs next 251
+program-lockstep: 0/1 programs match
+## Control:DISPATCH_BIT_SWAP
+directed: 0 instructions, 3 microcycles, 0 s: FAIL at microcycle 3 (instruction 0): UA 5 vs next 6
+program-lockstep: 0/1 programs match
+
+## note
+The directed program grew after these runs (full-ripple ADDI/SUBI/NEG, and an ADC whose carry enters at its own edge,
+for the timing pass). Its final version also matches: "directed: 67 instructions, 794 microcycles: match", in
+RESULTS-timing-sim.txt (the timing runs are lockstep runs too). The random runs used the same comparisons; the script's
+microcycle loop was later rewritten slot by slot (as MachineSim.microcycle does it) for the timing hooks.

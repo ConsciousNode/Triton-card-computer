@@ -1,0 +1,106 @@
+directed: 67 instructions, 794 microcycles, 147 s: match
+program-lockstep: 1/1 programs match
+timing simulation: 794 microcycles, 3176 slots, 459 endpoints that changed; scale {}
+self-test: 0 net values differ from machine-sim's settled values, in 0 slots 
+clock lag (latest rise after SCLK, per clock net): {"SCLK":0,"CLK":4.4}
+
+## captured on SCLK: 49 endpoints, 5 with negative slack; worst -2.8 ns
+  IO.U44.PE_N: arrival 97.8 required 95.0 slack -2.8 (µword 496, slot 3)
+     SCLK@75.0 -(IO.U44.CLK)-> IO:TPTC@82.0 -(IO.U45.CET)-> IO:TICK@89.0 -(IO.U4.4A)-> IO:TRST@93.4 -(IO.U3.3A)-> IO:/PEPRE@97.8
+  Video.U85.1D0: arrival 24.6 required 22.9 slack -1.7 (µword 241, slot 0)
+     SCLK@0.0 -(Video.U80.1CLK)-> Video:HC0@4.6 -(Video.U82.A0)-> Video:LEND@14.6 -(Video.U86.A10)-> Video:VN0@24.6
+  IO.U15.PE_N: arrival 19.9 required 20.0 slack 0.1 (µword 0, slot 0)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U205.2CLK)-> RESET@9.9 -(IO.U13.A17)-> IO:/PHLD@19.9
+  Control.U204.1D: arrival 95.2 required 97.0 slack 1.8 (µword 0, slot 3)
+     SCLK@75.0 -(Control.U200.CP)-> Control:SQ0@82.0 -(Control.U201.1A)-> Control:SQ0N@86.4 -(Control.U202.1B)-> Control:SL2@90.8 -(Control.U202.2A)-> Control:CEDGE_NEXT@95.2
+  IO.U30.D4: arrival 19.9 required 23.0 slack 3.1 (µword 0, slot 0)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U205.2CLK)-> RESET@9.9 -(IO.U29.A15)-> IO:/KCLRD@19.9
+  IO.U34.D4: arrival 19.9 required 23.0 slack 3.1 (µword 0, slot 0)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U205.2CLK)-> RESET@9.9 -(IO.U33.A15)-> IO:/MCLRD@19.9
+  IO.U49.CEP: arrival 14.0 required 20.0 slack 6.0 (µword 0, slot 0)
+     SCLK@0.0 -(IO.U44.CLK)-> IO:TPTC@7.0 -(IO.U45.CET)-> IO:TICK@14.0
+  IO.U61.CET: arrival 14.0 required 20.0 slack 6.0 (µword 0, slot 0)
+     SCLK@0.0 -(IO.U59.CLK)-> IO:BTC0@7.0 -(IO.U60.CET)-> IO:BTC1@14.0
+
+## captured on CLK: 410 endpoints, 0 with negative slack; worst 33.3 ns
+  ALU.U119.1D0: arrival 69.0 required 102.3 slack 33.3 (µword 41, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(ALU.U33.1CLK)-> ALU:CW_NEG0@9.0 -(ALU.U40.S0)-> ALU:NEG@16.0 -(ALU.U61.A18)-> ALU:C2+@26.0 -(ALU.U62.A12)-> ALU:R6+@36.0 -(ALU.U76.1B1)-> ALU:S6+@36.3 -(ALU.U105.A5)-> D6+@42.5 -(ALU.U112.A12)-> ALU:TS0+@52.5 -(ALU.U115.A7)-> ALU:TSF+@62.5 -(ALU.U116.1I0)-> ALU:NSF+@69.0
+  ALU.U119.1D1: arrival 68.0 required 102.3 slack 34.3 (µword 41, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(ALU.U4.2CLK)-> ALU:B5+@9.0 -(ALU.U43.1I0)-> ALU:BS5+@15.0 -(ALU.U61.A10)-> ALU:C2+@25.0 -(ALU.U62.A12)-> ALU:R6+@35.0 -(ALU.U76.1B1)-> ALU:S6+@35.3 -(ALU.U105.A5)-> D6+@41.5 -(ALU.U112.A12)-> ALU:TS0+@51.5 -(ALU.U115.A7)-> ALU:TSF-@61.5 -(ALU.U116.2I0)-> ALU:NSF-@68.0
+  ALU.U119.1D2: arrival 63.0 required 102.3 slack 39.3 (µword 250, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Registers.U2.CLK)-> Registers:CW_/WR@11.4 -(Registers.U3.2A)-> Registers:/WRA@15.8 -(Registers.U3.3A)-> Registers:/WRE@20.2 -(Registers.U12./WE)-> Registers:M8+@30.2 -(Registers.U22.A1)-> D8+@36.5 -(ALU.U112.A16)-> ALU:TS0+@46.5 -(ALU.U115.A7)-> ALU:TCF+@56.5 -(ALU.U117.1I0)-> ALU:NCF+@63.0
+  ALU.U119.1D4: arrival 63.0 required 102.3 slack 39.3 (µword 250, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Registers.U2.CLK)-> Registers:CW_/WR@11.4 -(Registers.U3.2A)-> Registers:/WRA@15.8 -(Registers.U3.3A)-> Registers:/WRE@20.2 -(Registers.U12./WE)-> Registers:M8+@30.2 -(Registers.U22.A1)-> D8+@36.5 -(ALU.U112.A16)-> ALU:TS0+@46.5 -(ALU.U115.A7)-> ALU:TOF+@56.5 -(ALU.U118.1I0)-> ALU:NOF+@63.0
+  Control.U19.D1: arrival 58.3 required 102.4 slack 44.1 (µword 240, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U10.2CLK)-> Control:CW_C4@9.0 -(Control.U60.A4)-> Control:KV6@19.0 -(Control.U66.1I2)-> Control:CA3+@25.5 -(Control.U123.1I0)-> Control:CB3+@32.0 -(Control.U81.A7)-> D3+@38.3 -(Control.U45.A6)-> Control:LV0@48.3 -(Control.U46.A8)-> Control:UN0@58.3
+  Control.U19.D2: arrival 58.3 required 102.4 slack 44.1 (µword 240, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U10.2CLK)-> Control:CW_C4@9.0 -(Control.U60.A4)-> Control:KV6@19.0 -(Control.U66.1I2)-> Control:CA3+@25.5 -(Control.U123.1I0)-> Control:CB3+@32.0 -(Control.U81.A7)-> D3+@38.3 -(Control.U45.A6)-> Control:LV1@48.3 -(Control.U46.A9)-> Control:UN1@58.3
+  Control.U19.D4: arrival 58.3 required 102.4 slack 44.1 (µword 240, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U10.2CLK)-> Control:CW_C4@9.0 -(Control.U60.A4)-> Control:KV6@19.0 -(Control.U66.1I2)-> Control:CA3+@25.5 -(Control.U123.1I0)-> Control:CB3+@32.0 -(Control.U81.A7)-> D3+@38.3 -(Control.U45.A6)-> Control:LV3@48.3 -(Control.U46.A11)-> Control:UN3@58.3
+  Control.U19.D5: arrival 58.3 required 102.4 slack 44.1 (µword 240, slot 3)
+     SCLK@0.0 -(Control.U202.3A)-> CLK@4.4 -(Control.U10.2CLK)-> Control:CW_C4@9.0 -(Control.U60.A4)-> Control:KV6@19.0 -(Control.U66.1I2)-> Control:CA3+@25.5 -(Control.U123.1I0)-> Control:CB3+@32.0 -(Control.U81.A7)-> D3+@38.3 -(Control.U45.A6)-> Control:LV4@48.3 -(Control.U46.A12)-> Control:UN4@58.3
+
+## SRAM writes: 1678 write windows ended, 18 chip pin groups checked, 10 with negative slack; worst -295.8 ns
+  Registers.U10.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U11.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U12.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U13.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U14.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U15.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Registers.U16.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+     Control:CW_SLS0@9.0 -(Control.U42.S0)-> RSLOT0@16.0
+  Memory.U240.addr: last change -81.0, needed by -282.2 (window -282.2..17.8) slack -201.2 (µword 0)
+     Memory:MAR0+@-91.0 -(Memory.U230.A0)-> Memory:RA0@-81.0
+  Memory.U241.addr: last change -81.0, needed by -282.2 (window -282.2..17.8) slack -201.2 (µword 0)
+     Memory:MAR0+@-91.0 -(Memory.U230.A0)-> Memory:RA0@-81.0
+  Memory.U240.data: last change 17.5, needed by 12.8 (window -82.2..17.8) slack -4.7 (µword 0)
+     Memory:CW_/MWR@9.0 -(Memory.U277./OE)-> Memory:RAMD0@17.5
+
+## write-enable races (windows under 1 ns): 0 on 0 chips
+
+######## positive control: every IS61WV5128 table 3x slower (30 ns): the timing must fail
+directed: 67 instructions, 794 microcycles, 148 s: match
+program-lockstep: 1/1 programs match
+timing simulation: 794 microcycles, 3176 slots, 460 endpoints that changed; scale {"IS61WV5128":3}
+self-test: 0 net values differ from machine-sim's settled values, in 0 slots 
+clock lag (latest rise after SCLK, per clock net): {"SCLK":0,"CLK":4.4}
+
+## captured on CLK: 411 endpoints, 55 with negative slack; worst -46.8 ns
+  ALU.U119.1D0: arrival 149.1 required 102.3 slack -46.8 (µword 41, slot 3)
+  ALU.U119.1D1: arrival 148.1 required 102.3 slack -45.8 (µword 41, slot 3)
+  ALU.U119.1D2: arrival 123.0 required 102.3 slack -20.7 (µword 250, slot 3)
+  ALU.U119.1D4: arrival 123.0 required 102.3 slack -20.7 (µword 250, slot 3)
+  Control.U19.D1: arrival 118.3 required 102.4 slack -15.9 (µword 240, slot 3)
+  Control.U19.D2: arrival 118.3 required 102.4 slack -15.9 (µword 240, slot 3)
+  Control.U19.D4: arrival 118.3 required 102.4 slack -15.9 (µword 240, slot 3)
+  Control.U19.D5: arrival 118.3 required 102.4 slack -15.9 (µword 240, slot 3)
+
+## captured on SCLK: 49 endpoints, 35 with negative slack; worst -41.7 ns
+  Video.U85.1D0: arrival 64.6 required 22.9 slack -41.7 (µword 241, slot 0)
+  IO.U15.PE_N: arrival 39.9 required 20.0 slack -19.9 (µword 0, slot 0)
+  IO.U30.D4: arrival 39.9 required 23.0 slack -16.9 (µword 0, slot 0)
+  IO.U34.D4: arrival 39.9 required 23.0 slack -16.9 (µword 0, slot 0)
+  Video.U80.1D0: arrival 34.6 required 22.9 slack -11.7 (µword 0, slot 0)
+  Video.U98.1D0: arrival 34.6 required 22.9 slack -11.7 (µword 0, slot 0)
+  Video.U80.1D1: arrival 59.6 required 47.9 slack -11.7 (µword 0, slot 1)
+  Video.U98.1D1: arrival 59.6 required 47.9 slack -11.7 (µword 0, slot 1)
+
+## SRAM writes: 1678 write windows ended, 18 chip pin groups checked, 10 with negative slack; worst -295.8 ns
+  Registers.U10.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U11.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U12.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U13.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U14.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U15.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Registers.U16.addr: last change 16.0, needed by -279.8 (window -279.8..20.2) slack -295.8 (µword 240)
+  Memory.U240.addr: last change -61.0, needed by -282.2 (window -282.2..17.8) slack -221.2 (µword 0)
+  Memory.U241.addr: last change -61.0, needed by -282.2 (window -282.2..17.8) slack -221.2 (µword 0)
+  Memory.U240.data: last change 17.5, needed by 12.8 (window -82.2..17.8) slack -4.7 (µword 0)
+
+## write-enable races (windows under 1 ns): 0 on 0 chips

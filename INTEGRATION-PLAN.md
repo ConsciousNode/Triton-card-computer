@@ -59,8 +59,48 @@ could pass every card test. The Registers card's test catching a Control card fa
   - **Lockstep:** after reset, the whole machine runs beside the microsim, comparing every microcycle: the executing
     micro-address (UPC), the next address (UA), the bus, and MODE/PRIV/IE/PROTEN. Empty RAM (NOPs): 300 microcycles,
     no divergence.
-- **Next: stage 2 proper.** Load a real program into the machine's RAM (and the microsim's), compare registers and
-  memory at instruction boundaries, then the directed programs, then the POOP OK boot.
+- **Stage 2 done (2026-11-20, evening): real programs on the whole machine** (`integration/program-lockstep.js`).
+  - The program is assembled once and put in the microsim's memory and in the Memory card's RAM chips, in the card's
+    declared layout. That preload is the one declared exception. After that, the netlist runs alone.
+  - **Compared every microcycle:** UPC, UA, the bus, and MODE/PRIV/IE/PROTEN.
+  - **Compared at every instruction boundary:**
+    - all 32 register-RAM slots, read from the Registers card's chips;
+    - the PC register;
+    - every memory write, both ways: each microsim write must be in the right chips with the right value, and each
+      chip write must decode to an address the microsim wrote.
+  - **Compared at the end:** a full RAM audit.
+  - **Results:**
+    - The directed program matches: 67 instructions, 794 microcycles. It covers MUL, loads and stores of trytes and
+      words, PUSH/POP, CALL/RET, a counted loop, ternary logic ops, full-ripple adds and an ADC.
+    - 12 random programs (seed 20261120): 12/12 match.
+    - Mutants caught by the directed program: 8 of 8, from four cards (ALU CARRY_SKIP and RAILS_SWAPPED_R7, Registers
+      SLOT_BITS_SWAPPED, Memory CHUNK_OFF_BY_ONE and MDR_LANE_RAILS, Control PC_CARRY_SKIP, COND_IGNORED and
+      DISPATCH_BIT_SWAP). The first directed program missed CARRY_SKIP: its adds never carried from slice 3 into
+      slice 4. It now has adds that do, and it catches it.
+    - Results are in `integration/RESULTS-program-lockstep.txt`.
+  - **Finding 4: the ISA's reset values for SP (200000) and ULIMIT (4782969) come from nowhere.** Register RAM has no
+    reset. Every program here starts with a boot prologue: ULIMIT by MTSPR, then SP through IRET (EPC = next
+    instruction, ESP = 200000, ESR = 0). **Decision for Kham:** keep the prologue as the boot ROM's job, or add a
+    microcoded reset routine at µaddress 0 that writes both slots. ULIMIT = CONST 243 through the L9 shift;
+    SP = 10 · 3^9 + 3170 takes an add. That's a few microwords, and every reset would honor the ISA.
+  - **Two checker corrections (not hardware bugs):**
+    - An instruction fetch puts the tryte on the bus. The Memory card drives it and the Control card's IR loads from
+      the bus.
+    - A flag word with BUS = NONE has the ALU card drive its result on the idle bus. The microsim now records
+      `lastAlu` (observation only) for that comparison.
+    - lockstep.js (stage 1, empty RAM) never met either case.
+  - **Not yet:** I/O instructions, traps and user mode, IRQs on the whole machine (stage 3), and the POOP OK boot. The
+    simulator runs about 0.15 s per microcycle, so the boot needs stage 4's event-driven settle first.
+- **Gate-level timing, first pass** (`integration/TIMING-GATE-LEVEL.md`, `sta.js`, `timing-sim.js`).
+  - **Main finding: there are no write strobes.** Register RAM and main RAM /WE are decoded levels, so writes run
+    from one microword into the next while the address changes. Proposed fix: a /WSTB strobe on a freed backplane pin
+    (DIV0 or PROT), plus driving STRETCH. That's Kham's decision.
+  - **CPU-clock registers:** 0 violations on the workload, worst slack +33 ns.
+  - **Marginal:** three 25 ns paths, all depending on datasheet numbers not yet verified.
+  - **Positive control:** with 30 ns tables, the timing fails as it must. The timing simulation's self-test shows 0
+    differing nets on every run.
+- **Next:** decide /WSTB and the reset values; then stage 3 (I/O programs, traps, IRQs), stage 4 (simulator speed),
+  and the POOP OK boot.
 
 ## Stage 1: compose the cards
 - `integrate.js` builds each card's netlist and merges them into one. Local nets get the card's prefix (`IO:BUSY`); the

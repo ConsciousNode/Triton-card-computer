@@ -579,6 +579,7 @@ class MicroMachine {
       else { const k = +sh.slice(1);
         aluOut = fromTrits(sh[0] === 'L' ? [...Array(k).fill(0), ...t.slice(0, 27 - k)] : [...t.slice(k), ...Array(k).fill(0)]); } }
     if (mu.WIDTH9) aluOut = balRem(aluOut, 19683, 9841);   // confine to 9 trits (T2 SP arithmetic)
+    this.lastAlu = aluOut;                                 // observation only: the ALU card drives it on BUS = NONE flag words
     // bus
     let bus;
     switch (mu.BUS || 'NONE') {
