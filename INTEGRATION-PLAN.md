@@ -299,6 +299,20 @@ could pass every card test. The Registers card's test catching a Control card fa
   clockgen-test 24/24 and 12/12 mutants. Whole machine `panel` workload: run, STOP, 3 instruction steps, 3 microcycle
   steps, back to instruction mode, 1 step, RUN to HALT, in lockstep; 409 stopped cycles each checked to change nothing.
   Regression: directed, POOP OK, traps, timer and console match. Details: `KERK-PANEL.md`.
+- **The per-card ROM repack (2026-11-22, about 4:30 am). verify-roms rerun clean too (ALU table exhaustive; 300 random programs, 0 mismatches; TritOS 2.1 self-hosting fixed point).** `integration/roms-cards.js` exports every table chip's
+  contents from the integrated netlist, with each distinct image stored once: **165 tables, 101 distinct images,
+  54 MB distinct** (86 MB if every chip were stored). There's a manifest of every chip → image, size and sha256
+  (`roms/cards/MANIFEST.md`, `manifest.json`). The images aren't committed: `export` makes them, and `check` proves a
+  fresh generation reproduces every hash.
+  - **Whole machine with every table wiped to garbage and refilled only from the files** (`CARD_ROMS=1`): directed,
+    POOP OK, traps and panel all match.
+  - Controls: one flipped bit in Control's control store (`CARD_ROMS_FLIP=Control.U1:0`) fails at the first FETCH;
+    a corrupted image file is refused by its hash, at load and by `check`.
+  - **Finding: the copy engine covers 152 tables on five cards, but the I/O card has 13 tables of its own** (the
+    trit↔binary port tables, added 2026-11-19, after the loader was proven). They have no load path. On a real
+    board the I/O card would power up with garbage in them. To do: a load path for the I/O card's tables (it hosts
+    the engine, so they may load first or by a short direct path), and a rerun of the flash budget. The old numbers
+    are for 152 tables and 12 MB.
 - **Next:**
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.

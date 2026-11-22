@@ -387,6 +387,11 @@ class SdPins {
 }
 // ---- one program on a fresh machine
 const m = compose({ mutants: MUT }); const chip = new Map(m.chips.map(c => [c.ref, c]));
+// CARD_ROMS=1 (2026-11-22, the ROM repack): every table chip is overwritten with garbage and refilled only from the
+// exported images (roms/cards/, integration/roms-cards.js), so the run proves the files are complete and right
+if (process.env.CARD_ROMS) { const r = require('./roms-cards.js').loadInto(m); console.log(`CARD_ROMS: ${r.loaded} tables loaded from ${r.images} image files`);
+  // positive control: CARD_ROMS_FLIP=<chip>:<address> flips bit 0 of one loaded byte; the run must fail
+  if (process.env.CARD_ROMS_FLIP) { const [ref, a] = process.env.CARD_ROMS_FLIP.split(':'); const c = chip.get(ref); c.mem[+a] ^= 1; console.log(`CARD_ROMS_FLIP: ${ref}[${a}] flipped`); } }
 if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.STA });   // STA=table or STA=cycle
 let TS = null; if (process.env.TSIM) TS = new TimingSim(m, { scale: STA_SCALE });          // TSIM=1: the delay simulation (timing-sim.js)
 const RAMSIZE = 4782969;

@@ -1,0 +1,1326 @@
+{
+ "generated": "2026-11-22T08:24:27.135Z",
+ "generator": "integration/roms-cards.js (from integrate.js compose())",
+ "tables": [
+  {
+   "ref": "ALU.U30",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "e88038dffef346a303276f70dee2507f5d1d3dbd96ea75548528df8d66768446"
+  },
+  {
+   "ref": "ALU.U31",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "ae40b25ecdb000870a26a27234f3b6ede118c631469291503fab8461babfcdd9"
+  },
+  {
+   "ref": "ALU.U32",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "03315cba3a56a7bc448ec6805a8535a18a3902a2051c45bd9a4313d8d51099a2"
+  },
+  {
+   "ref": "ALU.U29",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "6d040eb2b621cb72ef7d2b2388a0e52d9f584f735cfe65900cf78f52a4f4cb4d"
+  },
+  {
+   "ref": "ALU.U60",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U61",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U62",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U63",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U64",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U65",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U66",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U67",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U68",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "003153df8ee9b1a061f3bebd7561a2b4e199aa408638cc62ff69f368063f58c5"
+  },
+  {
+   "ref": "ALU.U112",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "855aeab39d26a5c4ea268471a9a77f05e69dafe71c4fa4b2f19105e6ae92d7a9"
+  },
+  {
+   "ref": "ALU.U113",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "855aeab39d26a5c4ea268471a9a77f05e69dafe71c4fa4b2f19105e6ae92d7a9"
+  },
+  {
+   "ref": "ALU.U114",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "855aeab39d26a5c4ea268471a9a77f05e69dafe71c4fa4b2f19105e6ae92d7a9"
+  },
+  {
+   "ref": "ALU.U115",
+   "card": "ALU",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "1041269a7bc6659d8e1ff2bb91d059aa09d284086d55b9316e87cf9e2ccab578"
+  },
+  {
+   "ref": "Control.U1",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "ecb5d95c7f1e0c61c3b11b0bfdaf80ba2f5c004bd8a978f7987fdf0ecddc42b2"
+  },
+  {
+   "ref": "Control.U2",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "7a4c260377832d33f8aafa1e8f616e97ba9e8882996000d304c42995674fed0f"
+  },
+  {
+   "ref": "Control.U3",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "d1cae98ad99f9477d8473db891caf4db1bb278c7eba8d528bb64e32f7d47e8ee"
+  },
+  {
+   "ref": "Control.U4",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "70d512e896115e6dc457fe3b24511fef7f4136879fd863de6443c01682f37470"
+  },
+  {
+   "ref": "Control.U5",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "9bece376040917c46eb904e01efbd460272b2c768638cb34ecc9efbfd6c61806"
+  },
+  {
+   "ref": "Control.U6",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "ca3dabdf8714a01932cd09c28ea45368d2a390e8be782cfe45c0de42d17e30f7"
+  },
+  {
+   "ref": "Control.U7",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "106bc6e866fae2fcaa8f2e97d65b74d51ccae04f91d5e659b4d97d627baaeedf"
+  },
+  {
+   "ref": "Control.U23",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "fa24d909b5ab31f8a0531c50412b995087126cbd324f9a56aa1dd39fd21d0fc7"
+  },
+  {
+   "ref": "Control.U24",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "4e0e0acad085322a6f5c7544af82b27270f82a1aac120cd93186aa5df5abb37d"
+  },
+  {
+   "ref": "Control.U25",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "3ed5a755e0193355caa23edbae0aaeae9b402c52c59c26dcec33312c74cd25b0"
+  },
+  {
+   "ref": "Control.U26",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "18ea4037a0acf276e56d7bdb6780cde331a45a77b7529edc390008a3fef94f64"
+  },
+  {
+   "ref": "Control.U27",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "fe2c0d43b9592a6fa86e1d6f59e4a061207d4c98e44f797ae4062ed20af15333"
+  },
+  {
+   "ref": "Control.U28",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "536563f1c7b013e63cd732429227bc2a416fc3777bfd388338d3577cd7e216f1"
+  },
+  {
+   "ref": "Control.U29",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "aee8e1c028f6eccb6dd70982a2972fb8ca6113363ea1b7654b1051800e7a1d4f"
+  },
+  {
+   "ref": "Control.U30",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "7d19557fe848eee0d14604cd7c61f43d58e1f081e40101bb97aa023160c26030"
+  },
+  {
+   "ref": "Control.U31",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8e7b1bba05603cba4194fa4e6d5800cee4c3072f45ec34d7454f20072e041605"
+  },
+  {
+   "ref": "Control.U45",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "62dca6e71a13ac23d5e43da2f9c60d0263b32f1dfabef10ec48bb484f4f3dbed"
+  },
+  {
+   "ref": "Control.U46",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "fd354a4b3b99ce7ddd0732020a808813e3b65925a3222a97fd1df3644790e8d1"
+  },
+  {
+   "ref": "Control.U50",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U51",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U52",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U53",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U54",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U55",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U56",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U57",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U58",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "916e3b4fe1418c50124897c08d1057bff992e381aede4ce9ab51f7901ec23897"
+  },
+  {
+   "ref": "Control.U60",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "1499214f5afec45ab6d0ff81a5bc2207423439f9d7455c739506dde0cb28b743"
+  },
+  {
+   "ref": "Control.U61",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "0eaaedcf1fae49cd32dc0c8900cfc7d46f38fac9e240f168814e1ff68477defb"
+  },
+  {
+   "ref": "Control.U62",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "5876f199f1a93327877b5a3724fa1d63232cba563a6517088f914d74363d7e79"
+  },
+  {
+   "ref": "Control.U90",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "6481441667e0fa9aa3cc468debf98037634d6f0516558ea472dc7c53b536fe18"
+  },
+  {
+   "ref": "Control.U91",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "6481441667e0fa9aa3cc468debf98037634d6f0516558ea472dc7c53b536fe18"
+  },
+  {
+   "ref": "Control.U92",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "6481441667e0fa9aa3cc468debf98037634d6f0516558ea472dc7c53b536fe18"
+  },
+  {
+   "ref": "Control.U93",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "88c97c0935d2fbba2b344e0b078e59ea9734675f2dc335e5ea09463415853e5e"
+  },
+  {
+   "ref": "Control.U94",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "2c1768bcb2975db5d5cd771ca0b469b2a5f8a69a7998d1e8057164a6c17b32bf"
+  },
+  {
+   "ref": "Control.U95",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "f589ab1ed39b73884dd03be781ec2354119243fa6aa67b5b74a21f709b444372"
+  },
+  {
+   "ref": "Control.U96",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "67596215713c1df75471fccc2d7e9586c2e2be06d4e35aacbb08ca708bb6aab7"
+  },
+  {
+   "ref": "Control.U97",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "45d5081a8bf9dd2c019ecb1450a7be98635f972e4a84c2daf2e0e960cf7b8b7f"
+  },
+  {
+   "ref": "Control.U98",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9bd4965a00790169b6eac64666f4c20e9bbad41bb798e6d1097ae2da62ebaf2e"
+  },
+  {
+   "ref": "Control.U99",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8091d02fe7ec9d30433e419367247790e8a35cb2cb39428f238035eb1f0ab484"
+  },
+  {
+   "ref": "Control.U100",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8091d02fe7ec9d30433e419367247790e8a35cb2cb39428f238035eb1f0ab484"
+  },
+  {
+   "ref": "Control.U101",
+   "card": "Control",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "e104c38e4239bda5ae8b4c69c5cc56f493c828458fe95cb722f73ff1bec4a413"
+  },
+  {
+   "ref": "Registers.U1",
+   "card": "Registers",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c826610bc953bb2fe47960f1a95e10cbce0ad164ca032c470a87e219b1616653"
+  },
+  {
+   "ref": "Memory.U1",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "03e19dd0a8457b20c4046087cba9d2fcf1f9cbd4e75d342991865b59b8b36c2b"
+  },
+  {
+   "ref": "Memory.U2",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "4bd7700d782f16a2009dc77bea04aeb5b9b06b8b8e5cbef40d87c6ae8711b62b"
+  },
+  {
+   "ref": "Memory.U3",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 1024,
+   "chipBytes": 524288,
+   "sha256": "64d8b9081a24c4425b7cf208fb054ac8ed9ad681753b67caef50b76a9ff1df89"
+  },
+  {
+   "ref": "Memory.U308",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "50087810dfe4c420f8ae39c3f3ab28dff653864ec5d182243cf29b9cc4682002"
+  },
+  {
+   "ref": "Memory.U10",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U11",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U12",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U13",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U14",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U15",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U16",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U17",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U18",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a9078b2b14d1c5e8099cf52815bc2223a33e6a8661579fefcf7836f9dc9b55eb"
+  },
+  {
+   "ref": "Memory.U20",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U21",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U22",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U23",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U24",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U25",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U26",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U27",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "691e62fa052726c262dbff434cc85d4611cde5ef8162950fb0822cc976d83dce"
+  },
+  {
+   "ref": "Memory.U28",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U29",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U30",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U31",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U32",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U33",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U34",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U35",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "691e62fa052726c262dbff434cc85d4611cde5ef8162950fb0822cc976d83dce"
+  },
+  {
+   "ref": "Memory.U36",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U37",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U38",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U39",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U40",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U41",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U42",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9ea629b965073c1dba30731ec4da0f2433203c11358d275c36b8fbe3fea9d144"
+  },
+  {
+   "ref": "Memory.U43",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "691e62fa052726c262dbff434cc85d4611cde5ef8162950fb0822cc976d83dce"
+  },
+  {
+   "ref": "Memory.U44",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "9f25f5ab1ccd3169863ebdff5352e7d5c61e2c9b95b07be32d0a8a522cd3e399"
+  },
+  {
+   "ref": "Memory.U45",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "f1bcb1a2de179ff944fbb3485284d6f09a2c986a07d7f6879f8555f3cd91c913"
+  },
+  {
+   "ref": "Memory.U46",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "016d10cbc41fe562e96fed6525444eff4dcf6eafbc72d1745ccf099862f3c35a"
+  },
+  {
+   "ref": "Memory.U47",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "37fe872c931a836f80783d8147d4ae137c08bb882f4c70540f0924d2dfb58d6b"
+  },
+  {
+   "ref": "Memory.U48",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "1f47f347d0985fb0e3c083ccae322f51add73f5942b870036b0ae425730390fb"
+  },
+  {
+   "ref": "Memory.U49",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "052ddb3dbd9089e64600fb91a61647b1172f7905302fe74023b75497f2a5a9a0"
+  },
+  {
+   "ref": "Memory.U50",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "115b106162ed891065a93c56c8522feeb92c2bb929faf3dff80fafe908d19846"
+  },
+  {
+   "ref": "Memory.U51",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "b3dda385ae3da8ac39430e9a86a8a194dd7dd045345a2b2fe227a53821eed981"
+  },
+  {
+   "ref": "Memory.U52",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "68a3d164a77fe0e7918331bf990b8f891c9a2d6c170450ac759753463a2069ad"
+  },
+  {
+   "ref": "Memory.U53",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "68a3d164a77fe0e7918331bf990b8f891c9a2d6c170450ac759753463a2069ad"
+  },
+  {
+   "ref": "Memory.U54",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "68a3d164a77fe0e7918331bf990b8f891c9a2d6c170450ac759753463a2069ad"
+  },
+  {
+   "ref": "Memory.U120",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "68afec83533e1908830b8acc5d331dc3266eacd81a2b319e08e7639065d6a30a"
+  },
+  {
+   "ref": "Memory.U122",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "3dfd0cb8b1abac574466ab73a91033d8e06e91315b49a598a1e17a851955115b"
+  },
+  {
+   "ref": "Memory.U313",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "88e19db18db4b01013497bf3cf7789ce5fa62068344f0c4f114d98876370c7ad"
+  },
+  {
+   "ref": "Memory.U314",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U315",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U316",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U317",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U318",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U319",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U320",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U321",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U322",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c7557e6b1fa1d31052d75fa66bb46271c8db8e14f44a844680d03996e3f29c64"
+  },
+  {
+   "ref": "Memory.U230",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "54eb89444d56e5476a56e641d5387f918460808d46ab31f030fe22de5e5c1322"
+  },
+  {
+   "ref": "Memory.U231",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "54eb89444d56e5476a56e641d5387f918460808d46ab31f030fe22de5e5c1322"
+  },
+  {
+   "ref": "Memory.U232",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "deedffd0faca9d945dfa63356c720140b93ea0797ce202cba8b3bcfb8e12b3ca"
+  },
+  {
+   "ref": "Memory.U233",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "b5e35aeb1021795b230063df6e79fe9a3677440a34b41a1f2aaeb5427e6923c6"
+  },
+  {
+   "ref": "Memory.U234",
+   "card": "Memory",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "4aaf0b0d36cb02e86a5cb27e5912ed6320a978c5001f681c3b958cbbe59faf76"
+  },
+  {
+   "ref": "Video.U1",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "292442a3d1e3ace84c9fd2de4623da3a3f581a823b16ebda9f225db76c734d0b"
+  },
+  {
+   "ref": "Video.U7",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "5b8e05ca24519ca684efa95ae79d9b1c2091e885a9d6f8e5567cee0e6a220f38"
+  },
+  {
+   "ref": "Video.U8",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "e2aa9c2a763b41789e9a3fffc9e350e31b736deb4254e74a42653f49e09a3b5c"
+  },
+  {
+   "ref": "Video.U9",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8e3b49a980c186bad30c1a8eb2677edaf3d1666dbaf20d2248a392af6445380a"
+  },
+  {
+   "ref": "Video.U11",
+   "card": "Video",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "4c10efea99046cb65b6203889b244f2c1c7996eb5cd781e55a5923336b0358c3"
+  },
+  {
+   "ref": "Video.U12",
+   "card": "Video",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "56043023a8ca35e449f65960b0967de49624d7ee2d1a7eb317fc0085bb34fa20"
+  },
+  {
+   "ref": "Video.U19",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "0bf4b1d9da97f87dba28f10da476fda95075b7d92326e6d591b0e6db4a07f8f6"
+  },
+  {
+   "ref": "Video.U20",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "7cd23a313f30d22b311d02f00a6d2a2b38b1be5db3cec3e09e3a01a893ac620d"
+  },
+  {
+   "ref": "Video.U21",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "d838b006b2795ee6393035625f33ed8095ca190d1b87d023343420ed3dd0e4a2"
+  },
+  {
+   "ref": "Video.U22",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "145859eab1d2ed9dfac14bcc801a6526044a8ae9aa73e2612a1dbf13a09b99b9"
+  },
+  {
+   "ref": "Video.U28",
+   "card": "Video",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "786ba6fada6bde2cb5a14825f816e2dc3daf4f823d580fda8b5418fe4520181a"
+  },
+  {
+   "ref": "Video.U29",
+   "card": "Video",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "4474de4301aa5cc25947c1b5e6f4f59a6157a8f39a64d5321f11fa9ca0fe59fd"
+  },
+  {
+   "ref": "Video.U30",
+   "card": "Video",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "fa67e2db5cc98a34c63f32810d44423e54fea2bf7bec2d6a71c2770c3247676f"
+  },
+  {
+   "ref": "Video.U40",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "b7b9967f4320887d53439b1f70d8266c58798472cb8282ae5f48754438b1debf"
+  },
+  {
+   "ref": "Video.U41",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "f1583dcc75d836f4463eba8fdeb8222b9b9987d80bcd1092956867e7b77bde4e"
+  },
+  {
+   "ref": "Video.U42",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541"
+  },
+  {
+   "ref": "Video.U81",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "0e12529f3c1a242e77159fbf84b98e15c09ceb5c17047d706f5a25d232d59c15"
+  },
+  {
+   "ref": "Video.U82",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "ce66d1bf5d01e46c1078416c6180648dd16eea3fe40562d3b09f3e9205f3edcc"
+  },
+  {
+   "ref": "Video.U83",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "0970ec2e638404f69a0453b6f47550898e91ade65846e5e98193caaa5650319f"
+  },
+  {
+   "ref": "Video.U84",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "5c518cb04ead1706e95226ba2cd02edc5a35e650a2855d57eb1d8174916bc63b"
+  },
+  {
+   "ref": "Video.U86",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a03bd0ed3893f06ffc271eddda62a03409ff8e20c819c21fa60a2576970b05c6"
+  },
+  {
+   "ref": "Video.U87",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "0c12bc9f96a69485ebf49bb69acbb989ef37be5a1e87ffdf9ebea2044684f465"
+  },
+  {
+   "ref": "Video.U88",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "de0ec927acf039dff0d4d06fdf55ce63474c521fe5fae1bd3a53765965a420dd"
+  },
+  {
+   "ref": "Video.U90",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "6d14065562be44b6c83488c8297b111c577e2c551a53ec3084dfb97aa611a0ef"
+  },
+  {
+   "ref": "Video.U91",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "43fbc572e554ea033f2baa2fc97136711b2657ccdb991ca85bd2d3654ac56884"
+  },
+  {
+   "ref": "Video.U117",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8922df9a7e332e83f34e13a8d9aa2667233d7c93bc4b69258f65a8ff5929e67d"
+  },
+  {
+   "ref": "Video.U118",
+   "card": "Video",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "359d69ab282f36193490c5aac7a67862ed7f23cb668474da26eb099273ebe70f"
+  },
+  {
+   "ref": "IO.U1",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "292442a3d1e3ace84c9fd2de4623da3a3f581a823b16ebda9f225db76c734d0b"
+  },
+  {
+   "ref": "IO.U5",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "98b42d6b78f2f7fa13112167f5e4fc4f96c4a14954d56d675c074b2e59a7a7ab"
+  },
+  {
+   "ref": "IO.U6",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "57d3cfb1b4dfbcfbb06602c9918b8f9f58608e9491f2a056de203cd5c60e9830"
+  },
+  {
+   "ref": "IO.U8",
+   "card": "IO",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "0c73225b96539a19e89060a74514e8103ee0f5184859c60341116cf4363fd7dd"
+  },
+  {
+   "ref": "IO.U9",
+   "card": "IO",
+   "part": "IS61WV20488",
+   "bytes": 2097152,
+   "chipBytes": 2097152,
+   "sha256": "a899e299202d6903874e752ecdebc9802420184aadbea1b52567e71886a20af8"
+  },
+  {
+   "ref": "IO.U13",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "a8939aa3700c90663312d0412ed375c9a64622ecde3fd0ca15cb50966d41d965"
+  },
+  {
+   "ref": "IO.U29",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "b9adcb7c08b6a609a3119bdc6686f91b5424bfbe22d0b46675e518723e60d85e"
+  },
+  {
+   "ref": "IO.U33",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "b9adcb7c08b6a609a3119bdc6686f91b5424bfbe22d0b46675e518723e60d85e"
+  },
+  {
+   "ref": "IO.U38",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "8dad01fcf28926c04215f5d4672f30a6991cba1af3533fde0a9400fef0d7d997"
+  },
+  {
+   "ref": "IO.U39",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "c82d6853094287a7a32a0781a8cf427aed4c4ad626b6bb622b91701a2da6e709"
+  },
+  {
+   "ref": "IO.U40",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "19b5399fc26d658e57e6cfdba1fa46e9055fcb28657f7b7f0fdfe6a032768aa8"
+  },
+  {
+   "ref": "IO.U56",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "eee882e89702523177c292e2c3a41c9609b4dafa140ce72867c7de2e9dc98d64"
+  },
+  {
+   "ref": "IO.U64",
+   "card": "IO",
+   "part": "IS61WV5128",
+   "bytes": 524288,
+   "chipBytes": 524288,
+   "sha256": "537afd8f32fa9dd6e91a2a775ba4930d83851d27c4e63565e99f865f5eaaf69b"
+  }
+ ]
+}

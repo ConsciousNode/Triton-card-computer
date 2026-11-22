@@ -1,0 +1,88 @@
+// roms-cards.js: the per-card ROM repack (Kehai Interim, 2026-11-22). MIT.
+// The machine has no central control store: each card holds its own slice of the microword and its own tables, and at
+// power-up the copy engine loads them all. This exports exactly what goes into those chips, from the integrated netlist
+// (integrate.js compose()), and checks it.
+//   node roms-cards.js export   write roms/cards/images/<sha256-16>.bin (each distinct image once) and
+//                               roms/cards/manifest.json + MANIFEST.md (every table chip -> its image, size, sha256)
+//   node roms-cards.js check    regenerate every image from the netlist and compare against manifest.json (deterministic,
+//                               nothing missing, nothing extra); also check the image files on disk, if present
+// A table is an SRAM whose /WE is tied high at run time (the copy engine's own rule, cards/loadpath.js isTable).
+// Image bytes are the chip's contents from address 0: 8-bit parts byte by byte; images shorter than the chip
+// (a 10-bit control-store slice in a 512K x 8 part) leave the rest unprogrammed (don't care; erased flash reads 0xFF).
+// The images are not committed (54 MB distinct): the generator is, and `check` proves it reproduces the manifest.
+// program-lockstep.js CARD_ROMS=1 builds the machine with every table filled only from these files.
+'use strict';
+const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const DIR = path.join(__dirname, '../roms/cards'), IMG = path.join(DIR, 'images'), MAN = path.join(DIR, 'manifest.json');
+const isTable = c => c.mem && c.pins['/WE'] === 'VCC';
+const bytesOf = mem => Buffer.from(mem.buffer, mem.byteOffset, mem.byteLength);
+const sha = b => crypto.createHash('sha256').update(b).digest('hex');
+const SIZE = { IS61WV5128: 524288, IS61WV20488: 2097152, IS61WV51216: 1048576 };
+
+function tablesOf(m) {
+  return m.chips.filter(isTable).map(c => { const b = bytesOf(c.mem);
+    return { ref: c.ref, card: c.ref.split('.')[0], part: c.part, bytes: b.length, chipBytes: SIZE[c.part] || null, sha256: sha(b), buf: b }; }); }
+
+// fill every table chip of a composed machine from the image files, after first filling it with garbage, so nothing
+// of the generated contents survives; returns a report, throws on any gap
+function loadInto(m) {
+  const man = JSON.parse(fs.readFileSync(MAN, 'utf8')), want = new Map(man.tables.map(t => [t.ref, t]));
+  const tables = m.chips.filter(isTable); let loaded = 0; const cache = new Map();
+  for (const c of tables) { const t = want.get(c.ref); if (!t) throw new Error(`table ${c.ref} is not in the manifest`);
+    if (t.part !== c.part) throw new Error(`${c.ref}: manifest says ${t.part}, the netlist has ${c.part}`);
+    let b = cache.get(t.sha256); if (!b) { const f = path.join(IMG, `${t.sha256.slice(0, 16)}.bin`);
+      if (!fs.existsSync(f)) throw new Error(`image file missing: ${f} (run: node integration/roms-cards.js export)`);
+      b = fs.readFileSync(f); if (sha(b) !== t.sha256) throw new Error(`${f}: hash mismatch`); cache.set(t.sha256, b); }
+    if (b.length !== c.mem.byteLength) throw new Error(`${c.ref}: image ${b.length} bytes, the chip's memory ${c.mem.byteLength}`);
+    const dst = bytesOf(c.mem); for (let i = 0; i < dst.length; i++) dst[i] = (i * 167 + 91) & 255;   // garbage first
+    b.copy(dst); loaded++; }
+  if (loaded !== man.tables.length) throw new Error(`the manifest lists ${man.tables.length} tables, the netlist has ${loaded}`);
+  return { loaded, images: cache.size }; }
+
+module.exports = { loadInto, tablesOf, isTable };
+
+if (require.main === module) {
+  const { compose } = require('./integrate.js');
+  const cmd = process.argv[2] || 'check'; const t0 = Date.now(); const T = tablesOf(compose());
+  const distinct = new Map(); for (const t of T) if (!distinct.has(t.sha256)) distinct.set(t.sha256, t);
+  const byCard = {}; for (const t of T) { const k = byCard[t.card] || (byCard[t.card] = { tables: 0, bytes: 0 }); k.tables++; k.bytes += t.bytes; }
+  const mb = n => (n / 1048576).toFixed(1);
+  if (cmd === 'export') {
+    fs.mkdirSync(IMG, { recursive: true });
+    for (const t of distinct.values()) fs.writeFileSync(path.join(IMG, `${t.sha256.slice(0, 16)}.bin`), t.buf);
+    const man = { generated: new Date().toISOString(), generator: 'integration/roms-cards.js (from integrate.js compose())',
+      tables: T.map(({ buf, ...r }) => r) };
+    fs.writeFileSync(MAN, JSON.stringify(man, null, 1) + '\n');
+    const total = T.reduce((a, t) => a + t.bytes, 0), dbytes = [...distinct.values()].reduce((a, t) => a + t.bytes, 0);
+    const rows = Object.entries(byCard).map(([c, k]) => `| ${c} | ${k.tables} | ${mb(k.bytes)} |`).join('\n');
+    const lines = T.map(t => `| ${t.ref} | ${t.part} | ${t.bytes.toLocaleString()} | \`${t.sha256.slice(0, 16)}\` |`).join('\n');
+    fs.writeFileSync(path.join(DIR, 'MANIFEST.md'), `# Per-card table images (the ROM repack)
+Generated by \`integration/roms-cards.js export\` from the integrated netlist, ${man.generated}.
+**${T.length} table chips, ${distinct.size} distinct images: ${mb(dbytes)} MB distinct, ${mb(total)} MB if every chip were stored.**
+The image files (\`images/<sha256-16>.bin\`) are not committed. \`node integration/roms-cards.js export\` makes them, and
+\`check\` proves a fresh generation reproduces every hash below. \`program-lockstep.js\` with CARD_ROMS=1 runs the whole
+machine with every table loaded only from these files.
+
+Bytes are the chip's contents from address 0. An image shorter than its chip (a 10-bit control-store slice in a
+512K × 8 SRAM) leaves the rest unprogrammed.
+
+| card | tables | MB (stored per chip) |
+| --- | ---: | ---: |
+${rows}
+
+| chip | part | bytes | sha256 (first 16) |
+| --- | --- | ---: | --- |
+${lines}
+`);
+    console.log(`exported ${T.length} tables, ${distinct.size} distinct images (${mb(dbytes)} MB) to roms/cards/ in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+    console.log(JSON.stringify(byCard));
+  } else {
+    if (!fs.existsSync(MAN)) { console.log('no manifest: run export first'); process.exit(1); }
+    const man = JSON.parse(fs.readFileSync(MAN, 'utf8')), M = new Map(man.tables.map(t => [t.ref, t])); const bad = [];
+    for (const t of T) { const e = M.get(t.ref); if (!e) bad.push(`${t.ref}: not in the manifest`); else if (e.sha256 !== t.sha256 || e.bytes !== t.bytes || e.part !== t.part) bad.push(`${t.ref}: regenerated image differs from the manifest`); M.delete(t.ref); }
+    for (const r of M.keys()) bad.push(`${r}: in the manifest, not in the netlist`);
+    let onDisk = 0, missing = 0; for (const t of distinct.values()) { const f = path.join(IMG, `${t.sha256.slice(0, 16)}.bin`);
+      if (!fs.existsSync(f)) { missing++; continue; } if (sha(fs.readFileSync(f)) !== t.sha256) bad.push(`${f}: content differs`); else onDisk++; }
+    console.log(`roms-cards check: ${T.length} tables regenerated, ${bad.length ? 'FAIL: ' + bad.slice(0, 5).join('; ') : 'every hash matches the manifest'}; image files on disk: ${onDisk} ok, ${missing} not exported`);
+    process.exit(bad.length ? 1 : 0); }
+}
