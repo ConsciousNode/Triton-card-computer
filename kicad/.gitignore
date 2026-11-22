@@ -1,0 +1,7 @@
+__pycache__/
+logs/
+*.kicad_prl
+out/*.svg
+out/*.log
+out/*.ses
+out/*-drc.txt
