@@ -5,3 +5,4 @@
 {"date":"2026-11-19T06:37:11.642Z","FULL":16,"SAMPLE":4,"mutant":"STROBE_EARLY","entries":3317,"clocks":53075,"writes":884,"ok":false,"msgs":["178 entries wrong after loading (first ALU:U30@0 0 vs 3)"]}
 {"date":"2026-11-19T06:37:46.714Z","FULL":16,"SAMPLE":4,"mutant":"END_IGNORED","entries":3317,"clocks":53170,"writes":885,"ok":false,"msgs":["cycle 53089: 0 tables with /WE low ()","cycle 53105: 0 tables with /WE low ()","cycle 53121: 0 tables with /WE low ()","cycle 53153: 0 tables with /WE low ()","cycle 53169: 0 tables with /WE low ()","1 entries wrong after loading (first Memory (3^14):U54@65535 3 vs 0)"]}
 {"date":"2026-11-21T22:19:14.088Z","FULL":1024,"SAMPLE":200,"mutant":null,"entries":50709,"clocks":811347,"writes":48276,"ok":true,"msgs":[]}
+{"date":"2026-11-22T08:47:24.211Z","FULL":1024,"SAMPLE":200,"mutant":null,"entries":55988,"clocks":895811,"writes":53347,"ok":true,"msgs":[]}

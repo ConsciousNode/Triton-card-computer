@@ -24,6 +24,9 @@ const cards = {
   'Memory (3^14)': () => { const C = require('./memory-card.js'); const cs = [0, 1, 2].map(() => Buffer.alloc(1024));
     words.forEach((mu, w) => { if (!mu) return; const cw = C.cardWord(mu); for (let j = 0; j < 3; j++) cs[j][w] = (cw >> (8 * j)) & 255; }); return C.build(cs, 4782969, SLOT); },
   Video: () => { const C = require('./video-card.js'); const cs = Buffer.alloc(1 << 19); words.forEach((mu, w) => { if (mu) cs[w] = C.cardWord(mu); }); return C.build(cs); },
+  // 2026-11-22, found by the ROM repack: the I/O card's own 13 tables (ports, added 2026-11-19) were never in the
+  // inventory, so the copy engine had no load path for them. Card 5 (the chip select has room for 8 cards).
+  IO: () => { const C = require('./io-ports.js'); const cs = Buffer.alloc(1 << 19); words.forEach((mu, w) => { if (mu) cs[w] = C.cardWord(mu); }); return C.build(cs); },
 };
 module.exports = { cards };
 if (require.main === module) {

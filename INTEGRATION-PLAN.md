@@ -313,6 +313,15 @@ could pass every card test. The Registers card's test catching a Control card fa
     board the I/O card would power up with garbage in them. To do: a load path for the I/O card's tables (it hosts
     the engine, so they may load first or by a short direct path), and a rerun of the flash budget. The old numbers
     are for 152 tables and 12 MB.
+  - **Closed the same night.** The generic load path fits the I/O card unchanged, as card 5 (`table-inventory.js`).
+    - load-sim: 13 tables, routing proved on all 13, every written entry matching; the four load-path mutants caught.
+    - The cost: 27 chips (16 × '125 to let the card's own table drivers go, the select shift pair, 4 × '138, 2 ×
+      '16211, 2 × '32, a '04) plus 21 resistor networks. The I/O card goes from 70 to 97 chips, plus the engine (~25).
+    - **powerup-sim, all six cards:** 55,988 entries, 895,811 engine clocks, 53,347 writes; DONE rose, LOAD dropped,
+      and every written entry matches on all 165 tables.
+    - **Flash budget, rerun:** 28.7M entries = 437 MB, 57 s to load. With identical images loaded in one pass: 19.2M
+      = 293 MB, 38 s. Two S70GL02GS (512 MB) still hold it, with ~15% to spare.
+    - `integration/RESULTS-io-loadpath.txt`.
 - **Next:**
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.

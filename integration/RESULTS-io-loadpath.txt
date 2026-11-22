@@ -1,0 +1,16 @@
+# 2026-11-22: the I/O card's tables on the load path
+load-sim IO: 13 tables, routing proved on 13, 9,092 writes, every written entry matches its image
+load-sim IO mutants: WRONG_COLOUR, DRIVER_LEFT_ON, WE_SWAP, STUCK_LINE all caught
+lp-check IO adds: LVC32 2, LVC125 16, LV164 2, LVC138 4, LVC04 1, CBTLV16211 2 (27 chips), RLINK8 21, RPACK8 1
+powerup-sim, six cards:
+stream: 55,988 entries (53,347 writes), 0.9 MB of flash; built in 9 s
+  cycle 200,000 (29 s), 12,131 writes
+  cycle 400,000 (51 s), 24,007 writes
+  cycle 600,000 (80 s), 35,643 writes
+  cycle 800,000 (105 s), 47,615 writes
+Power-up: 55,988 entries, 895,811 engine clocks (112.0 ms at 8 MHz), 2640 select shifts, 53,347 writes, 70,007 card settles, 115 s; DONE rose, LOAD dropped, every written entry matches its image
+
+real	1m55.242s
+user	1m55.733s
+sys	0m0.592s
+flash budget (all 165 tables): 28.7M entries = 437 MB at 16 B/entry, 57 s at 2 us/entry; with shared images 19.2M = 293 MB, 38 s (2 x S70GL02GS = 512 MB)
