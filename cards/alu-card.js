@@ -110,7 +110,7 @@ function build(aluImage, csImages, mutant, flagImages = null) {
   // --- STRETCH (2026-11-20): the carry-cycle stretch, from control word bit 31 (/STR, pulled high in RESET = no
   // stretch). One inverter drives the backplane line; Control's clock generator gives the cycle 8 slots instead of 4.
   // Mutant NO_STRETCH: the line stays low (the wiring before 2026-11-20).
-  c.add('U120', 'LVC04', { '1A': mutant === 'NO_STRETCH' ? 'VCC' : 'CW_/STR', '1Y': 'STRETCH', '2A': 'GND', '3A': 'GND', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
+  c.add('U122', 'LVC04', { '1A': mutant === 'NO_STRETCH' ? 'VCC' : 'CW_/STR', '1Y': 'STRETCH', '2A': 'GND', '3A': 'GND', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
   if (process.env.LOADPATH) require('./loadpath.js').addLoadPath(c, { worldLoad: { RESET: 1 } });   // COPY-ENGINE.md option B
   return c;
 }

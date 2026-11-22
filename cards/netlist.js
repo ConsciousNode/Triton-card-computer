@@ -6,7 +6,9 @@
 const { P } = require('./parts.js');
 class Card {
   constructor(name) { this.name = name; this.chips = []; this.inputs = new Set(['GND', 'VCC']); }
-  add(ref, part, pins, extra = {}) { if (!P[part]) throw new Error(`no model for ${part}`); this.chips.push({ ref, part, pins, ...extra }); return this; }
+  add(ref, part, pins, extra = {}) { if (!P[part]) throw new Error(`no model for ${part}`);
+    // 2026-11-22: designators must be unique (the ALU had two U120s; the simulator never minded, a PCB cannot)
+    if (this.chips.some(c => c.ref === ref)) throw new Error(`duplicate designator ${ref} (${part})`); this.chips.push({ ref, part, pins, ...extra }); return this; }
   input(...nets) { for (const n of nets) this.inputs.add(n); }
   check() {                                     // static: every pin's net has a driver or is a card input
     const drivers = new Map();

@@ -1,1 +1,1 @@
-{"card": "ALU", "height": 233.35, "chips": 97, "caps": 93, "nets": 470, "connector_pins_used": 125, "airwires": 1227, "airwire_m": 47.25, "fits": true, "back_side_chips": 0}
+{"card": "ALU", "overlaps": 0, "height": 233.35, "chips": 97, "caps": 93, "nets": 470, "connector_pins_used": 125, "airwires": 1227, "airwire_m": 45.27, "fits": true, "back_side_chips": 0}

@@ -91,8 +91,11 @@ for fp in b.GetFootprints():
         sz = pad.GetSize(); half = max(sz.x, sz.y) / 2
         lay = pcbnew.F_Cu if pad.IsOnLayer(pcbnew.F_Cu) else pcbnew.B_Cu
         a = (p0.x, p0.y); hit = None
-        dirs = [(ux, uy), (ux - uy, uy + ux), (ux + uy, uy - ux), (-uy, ux), (uy, -ux)]   # out, the two diagonals, sideways
-        for step in range(9):
+        # out, the two diagonals, sideways, then inward under the package's own body (2026-11-22: on the I/O card's
+        # 0.5 mm-pitch TSSOP-56s, 11 pins found nothing outside; the router half-did them, 7 left unconnected, and after
+        # routing all four signal layers are full there; before routing, the space under the body is empty)
+        dirs = [(ux, uy), (ux - uy, uy + ux), (ux + uy, uy - ux), (-uy, ux), (uy, -ux), (-ux, -uy), (-ux - uy, -uy + ux), (-ux + uy, -uy - ux)]
+        for step in range(16):
             for (ex, ey) in dirs:
                 L = math.hypot(ex, ey); d = half + mm(0.45) + step * mm(0.15)
                 vx, vy = int(p0.x + ex / L * d), int(p0.y + ey / L * d)
@@ -139,7 +142,7 @@ if os.environ.get('REUSE_SES') and os.path.exists(ses): r = subprocess.Completed
 else:
   if os.path.exists(ses): os.remove(ses)
   r = subprocess.run(['xvfb-run', '-a', 'java', '-jar', jar, '-de', dsn, '-do', ses, '-mp', passes],
-                   capture_output=True, text=True, timeout=7000)
+                   capture_output=True, text=True, timeout=40000)
 print('freerouting exit', r.returncode, f'{time.time() - t0:.0f} s'); print('\n'.join((r.stdout + r.stderr).strip().splitlines()[-6:]))
 if not os.path.exists(ses): sys.exit('no SES produced')
 # KiCad 7's ImportSpecctraSES works only inside the GUI (it acts on the "current" board), so the session is read here:

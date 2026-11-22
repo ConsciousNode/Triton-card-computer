@@ -62,6 +62,7 @@ def main(js, out, height=None):
     # capacitor beside each IC; when the front is full, the back (footprints flipped to B.Cu)
     gap, x0 = 1.0, 18.5
     missing, placed, caps = set(), [], 0; items = []
+    owner = {}   # cap -> the chip it was made for (2026-11-22: chosen by nearness, C93 followed U120 onto C75 on the ALU)
     for i, c in enumerate(d['chips']):
         spec = PARTS.get(c['part'])
         if not spec: missing.add(c['part']); continue
@@ -139,7 +140,7 @@ def main(js, out, height=None):
             if n is not None: pad.SetNet(net(n))
         if cw:
             C = load_fp('Capacitor_SMD:C_0603_1608Metric'); caps += 1; C.SetReference(f'C{caps}'); C.SetValue('100n')
-            C.SetOrientationDegrees(90); C.SetPosition(mm(x + 0.9, y + h / 2)); board.Add(C)
+            C.SetOrientationDegrees(90); C.SetPosition(mm(x + 0.9, y + h / 2)); board.Add(C); owner[C.GetReference()] = fp.GetReference()
             if side == 'B': C.Flip(C.GetPosition(), False)
             for pad in C.Pads(): pad.SetNet(net('VCC' if pad.GetNumber() == '1' else 'GND'))
 
@@ -155,7 +156,7 @@ def main(js, out, height=None):
         capof = {}
         for C in board.GetFootprints():
             if C.GetReference().startswith('C') and C.GetValue() == '100n':
-                cp = C.GetPosition(); best = min(chips, key=lambda f: (f.GetPosition().x - cp.x) ** 2 + (f.GetPosition().y - cp.y) ** 2); capof.setdefault(best.GetReference(), []).append((C, cp.x - best.GetPosition().x, cp.y - best.GetPosition().y))
+                cp = C.GetPosition(); best = next(f for f in chips if f.GetReference() == owner[C.GetReference()]); capof.setdefault(best.GetReference(), []).append((C, cp.x - best.GetPosition().x, cp.y - best.GetPosition().y))
         idx = {fp.GetReference(): k for k, fp in enumerate(chips)}
         pos = [[fp.GetPosition().x, fp.GetPosition().y] for fp in chips]; rot = [0] * len(chips)
         off = [[(pd.GetPosition().x - fp.GetPosition().x, pd.GetPosition().y - fp.GetPosition().y, pd.GetNetname()) for pd in fp.Pads()] for fp in chips]
@@ -214,7 +215,7 @@ def main(js, out, height=None):
     for C in board.GetFootprints():
         if not (C.GetReference().startswith('C') and C.GetValue() == '100n'): continue
         cp = C.GetPosition()
-        ch = min(chips_all, key=lambda f: (f.GetPosition().x - cp.x) ** 2 + (f.GetPosition().y - cp.y) ** 2)
+        ch = next(f for f in chips_all if f.GetReference() == owner[C.GetReference()])
         pins = [(pd.GetPosition(), pd.GetNetname()) for pd in ch.Pads() if pd.GetNetname() in ('GND', '+3V3')]
         def score():
             t = 0

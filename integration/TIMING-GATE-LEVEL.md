@@ -40,7 +40,7 @@ Not covered: hold times (that needs min delays), wiring and backplane loading, a
   - The framebuffer path (/VWE, VBUSY) is unchanged for now. The Video card samples VBUSY a slot ahead, so its strobe
     timing needs its own design: still open.
 - **STRETCH is driven:**
-  - The ALU card's spare control-word bit 31 is now /STR. One '04 (U120) drives the backplane line.
+  - The ALU card's spare control-word bit 31 is now /STR. One '04 (U122; U120 until 2026-11-22, when the KiCad export found it shared that designator with an ESRV 3245) drives the backplane line.
   - A cycle is stretched when the word is an ADD or INCA whose result is used (BUS = ALU, or the flags). 75 of the 740
     directed microcycles were stretched.
 - **Timing simulation after the fix** (directed program, 740 microcycles, 3,260 slots, self-test 0):
