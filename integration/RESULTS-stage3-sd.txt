@@ -6,3 +6,7 @@ program-lockstep: 1/1 programs match
 real	57m27.732s
 user	56m57.302s
 sys	0m14.544s
+
+# positive control SD_CONTROL=flip9 (one bit in unread sector 9, machine side only):
+sd: 22572 instructions, 217753 microcycles, 3671 s: FAIL at microcycle 217753 (instruction 22572): the SD images differ
+program-lockstep: 0/1 programs match

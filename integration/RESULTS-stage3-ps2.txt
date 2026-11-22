@@ -1,0 +1,11 @@
+# stage 3 part 2, PS/2 on the whole machine (2026-11-21). Raw output of: node integration/program-lockstep.js ps2
+  terminal: "" (0 bytes, 0 framing errors); the CPU waited 0 microcycles on IORDY
+  PS/2: 7 keyboard frames by interrupt (KBUF 0x1c 0xf0 0x1c 0x1 0xe0 0x12 0xaa), 7 IRQSET1 pulses; keyboard inhibit waited 0 slots; 0 mid-frame aborts;
+  mouse: bad-parity frame latched while masked (status 3), the second held off 76645 slots, released by the ISR's read, then in by interrupt (MBUF 0x5a 0x33, statuses 0 0); H = 400 slots
+ps2: 3168 instructions, 20612 microcycles, 364 s: match
+program-lockstep: 1/1 programs match
+
+# positive controls (2026-11-21, same code; last lines of each run)
+MACHINE_MUTANT=IO:K_NO_IRQ  -> ps2: 476 instructions, 3039 microcycles, 53 s: FAIL at microcycle 3039 (instruction 476): UA 1 vs next 479
+MACHINE_MUTANT=IO:M_NO_IRQ  -> ps2: 2847 instructions, 18482 microcycles, 314 s: FAIL at microcycle 18482 (instruction 2847): UA 1 vs next 479
+MACHINE_MUTANT=IO:NO_INHIBIT -> ps2: 2893 instructions, 18852 microcycles, 320 s: FAIL at microcycle 18852 (instruction 2893): mouse: the second frame did not wait out the inhibit and then come in

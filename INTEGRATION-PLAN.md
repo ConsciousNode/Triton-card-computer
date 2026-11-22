@@ -251,10 +251,30 @@ could pass every card test. The Registers card's test catching a Control card fa
     chip-select changes) identical; both SD images identical; sector 5 read right, sector 7 written and read back;
     the console printed `0000` with 0 framing errors. 57 min. Raw output: `integration/RESULTS-stage3-sd.txt`.
   - Positive control `SD_CONTROL=flip9`: one bit flipped in unread sector 9, machine side only, so only the image
-    comparison can see it. (Result below when it lands.)
+    comparison can see it: **caught** ("the SD images differ", after the full 61 min run).
+- **Stage 3 part 2, PS/2 on the whole machine: match (2026-11-21, night).**
+  - `program-lockstep.js ps2`. The CPU can't freeze here, so world devices clock frames in at K_CLK/K_DATA and
+    M_CLK/M_DATA in real time (accelerated: half-period 400 slots), and behave as PS/2 devices do: start only after the
+    clock has been idle, wait out the card's inhibit (K_HOLD/M_HOLD), abort and resend if inhibited mid-frame.
+  - **The declared sync rule**, derived from the card's path and checked on every frame: KRDY rises at slot L, IRQSET
+    pulses at the first CPU edge E >= L, the Control card latches IPEND on E, and a FETCH branches on IPEND as latched
+    at the edge before it. So the microsim's port gets the frame at the first boundary whose instruction's last edge
+    B has L <= B. The timer's rule (fire <= B - 1) is the same statement for a combinational firing slot. Two wrong
+    tries first, each caught by the lockstep at the first frame it mistimed (one instruction late, then one early).
+  - Workload: 7 keyboard frames by interrupt (the drivers' KBD_ISR; one bad parity; two back-to-back pairs); the mouse
+    masked at first: its bad-parity frame latches, the card holds the clock, the second frame waits 76,645 slots;
+    then the CPU reads status 3, unmasks IRQ 2, a small ISR reads, the card releases, the device resumes and the
+    second frame comes in by interrupt; status reads 0 and 0 at the end. 3,168 instructions, 20,612 microcycles, match.
+  - **Measured:** a keyboard serviced by interrupt never makes the device wait. The card latches on the 11th falling
+    clock, mid stop bit, and the ISR reads within about 260 slots, before the stop bit ends. (Not covered: a mid-frame
+    abort; it lives only in the world device.)
+  - Positive controls, all caught: IO:K_NO_IRQ (microcycle 3,039), IO:M_NO_IRQ (18,482), IO:NO_INHIBIT (by the world
+    check; the two models stay consistent with each other there, which is why that check exists).
+  - Raw output: `integration/RESULTS-stage3-ps2.txt`.
+  - Not modelled, by the microsim's design: a status IN in the same instruction as a latch would see the card's flag
+    before the microsim's instruction-grained port does. The workload reads status only when no frame can latch.
 - **Next:**
-  - the rest of stage 3 part 2: PS/2 on the whole machine (needs the declared sync rule: frames clocked at the pins in
-    real time; the microsim's port learns of a frame at the boundary after the card latches it), then the video ports;
+  - the rest of stage 3 part 2: the video ports;
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.
 

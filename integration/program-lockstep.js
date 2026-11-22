@@ -556,6 +556,128 @@ else if (WHICH === 'sd') { n = 1;
       for (let i = 0; i < 729; i++) { if (mm.mem[20000 + i] !== sector5[i]) return `sector 5 word ${i} read wrong`; if (mm.mem[22000 + i] !== pattern[i]) return `sector 7 read-back word ${i} wrong`; }
       console.log(`  SD: ${pins.log.length} SPI log entries identical (${pins.log.filter(e => !e.startsWith('cs')).length} bytes), images identical, sector 5 read, sector 7 written and read back, console "0000"`); } };
   ok += runOne(testProgram({ nKeys: 0 }), 'sd', opts); }
+else if (WHICH === 'ps2') { n = 1;
+  // ---- stage 3 part 2: PS/2 on the whole machine (2026-11-21, night).
+  // The card-level harness froze the CPU and clocked a whole frame in at an instruction boundary. The whole machine
+  // can't freeze, so here the frames are clocked in at the pins in real time by a world device per port, and the
+  // DECLARED SYNC RULE is: the microsim's Ps2Port learns of a frame when the card latches it (IO:KRDY / IO:MRDY rises at
+  // slot L), delivered at the first instruction boundary whose instruction's last edge B (clk.boundary(), edgePrev at
+  // the tick: edgeNow there is already the edge of the FETCH about to run) has L <= B. Derived from the card's path, and
+  // checked below on every frame: KRDY is a registered output, IRQSET1 pulses at the first CPU edge E >= L, the Control
+  // card latches IPEND on E, and a FETCH branches on IPEND as latched at the edge before it. So an interrupt source
+  // whose pulse is at edge E is taken at the first FETCH after an instruction ending at B >= E. The timer's rule is the
+  // same statement: its firing slot is combinational and pulses at the first edge >= fire + 1, hence fire <= B - 1.
+  // (2026-11-21, two wrong tries first, both caught by the lockstep at the first frame they got wrong: the timer's
+  // formula copied as is, one instruction late when L = B, microcycle 7,431; then L <= edgeNow, one early, 3,033.) A device only starts a frame while the card isn't holding its clock low (K_HOLD /
+  // M_HOLD), as a real PS/2 device waits out an inhibit. Bit timing is accelerated (half-period H slots, 50 kHz at
+  // H = 400, against PS/2's 10-16.7 kHz); the card samples K_CLK on SCLK, so only the frames' place in the instruction
+  // stream changes with H, and it moves anyway from frame to frame. The ps2Bits framing is lifted from
+  // cards/io-ports-test.js (Kehai Interim, 2026-11-19).
+  // Workload: keyboard frames by interrupt (the drivers' KBD_ISR, IRQ 1), two pairs back to back so the second of each
+  // waits out the card's inhibit until the ISR reads; one bad parity. (Measured: they never wait. The card latches on
+  // the 11th falling clock, mid stop bit, and the ISR reads within about 260 slots, before the stop bit ends.) The
+  // mouse (IRQ 2) starts masked: its bad-parity frame latches and the card holds the clock, so the second frame waits;
+  // after the keys the CPU reads the mouse status (3: ready, parity error) and unmasks IRQ 2; a small ISR here reads the
+  // held byte, the card releases, the device resumes after the idle interval and the second frame comes in by
+  // interrupt too. Then both status ports are read once more (0, 0).
+  const { drivers, ld, KCOUNT: KC, KBUF: KB, VBR: DVBR, PRNUM: PRN } = require('../microsim/bare-drivers.js');
+  const ps2Bits = (byte, parityOk) => { const d = [...Array(8).keys()].map(i => (byte >> i) & 1), ones = d.reduce((a, b) => a + b, 0);
+    return [0, ...d, (ones % 2 === 0 ? 1 : 0) ^ (parityOk ? 0 : 1), 1]; };
+  const H = +(process.env.PS2_H || 400), ST = 23100, MC = 23200;
+  // [byte, parityOk, gap in slots after this device's previous frame ended (0 = back to back)]
+  const KEYS = [[0x1C, true, 6000], [0xF0, true, 3000], [0x1C, true, 0], [0x01, false, 5000], [0xE0, true, 4000], [0x12, true, 0], [0xAA, true, 7000]];
+  const MICE = [[0x5A, false, 2500], [0x33, true, 0]];
+  const N = KEYS.length;
+  const src = `
+MAIN: ${ld('R1', DVBR)}
+MTSPR R1, #5
+LI R1, #2
+MTSPR R1, #3
+LI R1, #1
+MTSPR R1, #2
+WAITK: ${ld('R2', KC)}
+LW R3, R2, #0
+CMPI R3, #${N}
+JNX WAITK
+${ld('R2', ST)}
+IN R1, #45
+ST R1, R2, #0
+LI R1, #6
+MTSPR R1, #3
+WAITM: ${ld('R2', MC)}
+LW R3, R2, #0
+CMPI R3, #2
+JNX WAITM
+${ld('R2', ST)}
+IN R1, #45
+ST R1, R2, #1
+IN R1, #43
+ST R1, R2, #2
+HALT
+MOUSE_ISR: PUSH R1
+PUSH R2
+PUSH R3
+IN R1, #44
+${ld('R2', MC)}
+LW R3, R2, #0
+ADD R2, R2, R3
+ST R1, R2, #3
+${ld('R2', MC)}
+ADDI R3, R3, #1
+SW R3, R2, #0
+POP R3
+POP R2
+POP R1
+IRET
+${PRN}
+${drivers({})}
+VECS: .word #0
+`;
+  const mkDev = (x, list) => ({ x, list: list.slice(), cur: null, bit: 0, t: 0, clk: 1, data: 1, endAt: 0, waitedHeld: 0, idle: 0, aborts: 0, sent: [], latched: [] });
+  const dev = { K: mkDev('K', KEYS), M: mkDev('M', MICE) };
+  const held = { K: 0, M: 0 }, prevRdy = { K: 0, M: 0 }, pendingIn = { K: [], M: [] }, pulses = { 1: 0, 2: 0 }, msDeliv = { K: [], M: [] };
+  let mmRef = null; const heldSlots = { K: 0, M: 0 }; const edgesAll = [], pulseEdges = { K: [], M: [] }, latchSlots = { K: [], M: [] };
+  // A device as the PS/2 protocol has it: it starts a frame only after the clock line has been released (high) for
+  // an idle interval (here H slots; the spec's 50 us at real speed); if the host pulls the clock low mid-frame, before
+  // the 11th clock, it aborts and sends the same byte again once the line is idle (2026-11-21: the first version
+  // started on the slot after a stop bit, before the card's synchronizer had latched, and so got inhibited mid-frame).
+  const step = (d, g) => {                                   // one slot of a world PS/2 device
+    if (held[d.x]) d.idle = 0; else d.idle++;
+    if (d.cur && held[d.x] && d.bit < d.cur.bits.length - 1) {    // inhibited mid-frame: abort, resend later
+      d.list.unshift([d.cur.b, d.cur.okp, 0]); d.sent.pop(); d.cur = null; d.clk = 1; d.data = 1; d.endAt = g; d.aborts++; return; }
+    if (!d.cur) { if (!d.list.length || g < d.endAt + d.list[0][2]) return;
+      if (held[d.x]) { d.waitedHeld++; return; }               // inhibited: hold the byte
+      if (d.idle < H) return;
+      const [b, okp] = d.list.shift(); d.cur = { b, okp, bits: ps2Bits(b, okp) }; d.bit = 0; d.t = 0; d.sent.push(b); }
+    const bits = d.cur.bits; d.data = bits[d.bit]; d.clk = d.t < H ? 1 : 0;
+    if (++d.t === 2 * H) { d.t = 0; if (++d.bit === bits.length) { d.cur = null; d.clk = 1; d.data = 1; d.endAt = g; } } };
+  const opts = { io: true, timer: (mm) => { mmRef = mm; }, cap: 400000,
+    preload: sym => [[DVBR + 24, sym.KBD_ISR], [DVBR + 25, 0], [DVBR + 26, 0], [DVBR + 27, sym.MOUSE_ISR], [DVBR + 28, 0], [DVBR + 29, 0]],
+    beforeSlot: (sim, g) => { for (const x of ['K', 'M']) { const d = dev[x]; step(d, g); sim.set(`${x}_CLK`, d.clk && !held[x] ? 1 : 0); sim.set(`${x}_DATA`, d.data); } },
+    onSlot: (hi, lo, g, last) => { for (const x of ['K', 'M']) { held[x] = lo.get(`IO:${x}_HOLD`) === 0 ? 1 : 0; if (held[x]) heldSlots[x]++;
+        if (process.env.PS2_DEBUG && g % 4000 === 0) console.log(`  [dbg] slot ${g} ${x}: HOLD ${lo.get(`IO:${x}_HOLD`)} RDY ${lo.get(`IO:${x}RDY`)} CLK ${lo.get(`${x}_CLK`)} dev cur ${!!dev[x].cur} list ${dev[x].list.length} idle ${dev[x].idle}`); const r = lo.get(`IO:${x}RDY`);
+        if (r === 1 && prevRdy[x] === 0) { const d = dev[x], b = d.sent[d.latched.length]; d.latched.push(b); latchSlots[x].push(g); pendingIn[x].push({ L: g, b, okp: (x === 'K' ? KEYS : MICE)[d.latched.length - 1][1] }); }
+        prevRdy[x] = r; }
+      if (last) { edgesAll.push(g); if (lo.get('IRQSET1') === 1) pulseEdges.K.push(g); if (lo.get('IRQSET2') === 1) pulseEdges.M.push(g);
+        if (lo.get('IRQSET1') === 1) { pulses[1]++; if (process.env.PS2_DEBUG) console.log(`  [dbg] IRQSET1 at edge slot ${g}`); } if (lo.get('IRQSET2') === 1) pulses[2]++; } },
+    onTick: (mm) => { const B = mm.io.clk.boundary();
+      if (process.env.PS2_DEBUG) for (const x of ['K', 'M']) if (pendingIn[x].length) console.log(`  [dbg] tick ucycle ${mm.ucycles} upc ${mm.upc}: ${x} pending L ${pendingIn[x][0].L}, edgePrev ${mm.io.clk.boundary()}, edgeNow ${B}`);
+      for (const [x, port] of [['K', mm.io.kbd], ['M', mm.io.mouse]]) while (pendingIn[x].length && pendingIn[x][0].L <= B) {
+        const f = pendingIn[x].shift(); if (process.env.PS2_DEBUG) console.log(`  [dbg] ${x} latched at slot ${f.L}, delivered at boundary B ${B} (edgeNow ${mm.io.clk.now()}), microcycle ${mm.ucycles}`); port.send(f.b, mm.io.steps, f.okp); port.tick(mm.io.steps, mm); msDeliv[x].push(f.b); } },
+    finish: (mm) => {
+      if (dev.K.latched.length !== N || dev.K.latched.some((b, i) => b !== KEYS[i][0])) return `keyboard: the card latched ${dev.K.latched} for ${KEYS.map(k => k[0])}`;
+      for (let i = 0; i < N; i++) if (mm.mem[KB + i] !== KEYS[i][0]) return `KBUF[${i}] = ${mm.mem[KB + i]}, sent ${KEYS[i][0]}`;
+      for (const x of ['K', 'M']) { let k = 0; const want = latchSlots[x].map(L => { while (k < edgesAll.length && edgesAll[k] < L) k++; return edgesAll[k]; });
+        if (want.length !== pulseEdges[x].length || want.some((e, i) => e !== pulseEdges[x][i])) return `${x}: IRQ pulses at edges ${pulseEdges[x]}, the rule says the first edge >= each latch: ${want}`; }
+      if (pulses[1] !== N) return `${pulses[1]} IRQSET1 pulses for ${N} keyboard frames`;
+      if (process.env.PS2_DEBUG) console.log(`  [dbg] held slots K ${heldSlots.K} M ${heldSlots.M}, waited K ${dev.K.waitedHeld} M ${dev.M.waitedHeld}`);
+      if (dev.M.latched.length !== 2 || dev.M.latched.some((b, i) => b !== MICE[i][0]) || pulses[2] !== 2) return `mouse: latched ${dev.M.latched}, ${pulses[2]} IRQSET2 pulses (want ${MICE.map(m => m[0])}, 2)`;
+      for (let i = 0; i < 2; i++) if (mm.mem[MC + 3 + i] !== MICE[i][0]) return `MBUF[${i}] = ${mm.mem[MC + 3 + i]}, sent ${MICE[i][0]}`;
+      if (dev.M.list.length || held.M || dev.M.waitedHeld === 0) return 'mouse: the second frame did not wait out the inhibit and then come in';
+      if (mm.mem[ST] !== 3 || mm.mem[ST + 1] !== 0 || mm.mem[ST + 2] !== 0) return `status reads: mouse ${mm.mem[ST]} then ${mm.mem[ST + 1]} (want 3 then 0), keyboard ${mm.mem[ST + 2]} (want 0)`;
+      console.log(`  PS/2: ${N} keyboard frames by interrupt (KBUF ${KEYS.map(k => '0x' + k[0].toString(16)).join(' ')}), ${pulses[1]} IRQSET1 pulses; keyboard inhibit waited ${dev.K.waitedHeld} slots; ${dev.K.aborts + dev.M.aborts} mid-frame aborts;`);
+      console.log(`  mouse: bad-parity frame latched while masked (status 3), the second held off ${dev.M.waitedHeld} slots, released by the ISR's read, then in by interrupt (MBUF 0x5a 0x33, statuses 0 0); H = ${H} slots`); } };
+  ok += runOne(src, 'ps2', opts); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);
