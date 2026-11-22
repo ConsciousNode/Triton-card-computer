@@ -42,6 +42,9 @@ const MAP = {
   '74LVC574A': ['LVC574', p => p === 'OE_N' ? '/OE' : /^[DQ]\d$/.test(p) ? p[0] + (+p[1] + 1) : p],
   '74LVC138A': ['LVC138', p => p === 'G2A_N' ? '/G2A' : p === 'G2B_N' ? '/G2B' : /^Y\d_N$/.test(p) ? `/Y${p[1]}` : p],
   '74LVC245A': ['LVC245', p => p === 'OE_N' ? '/OE' : p],
+  // Round 12 (2026-11-22): Neon's netlist now names these parts itself (the write-path and bus-hold fix, as drawn by Neon)
+  '74LVCH245A': ['LVCH245', p => p === 'OE_N' ? '/OE' : p],
+  '74LVC257A': ['LVC257', p => p === 'OE_N' ? '/OE' : p],
   IS61WV5128EDBLL: ['IS61WV5128', p => ({ CE_N: '/CE', OE_N: '/OE', WE_N: '/WE' })[p] || p],
   SST39SF040: ['SST39SF040', p => ({ CE_N: '/CE', OE_N: '/OE', WE_N: '/WE' })[p] || p],
 };

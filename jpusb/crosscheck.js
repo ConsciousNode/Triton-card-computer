@@ -77,7 +77,7 @@ const ours = card._ev.F.names; const pairs = [];
 // (CLK_48M is left out: it is sampled just before the edge is applied, by construction)
 for (let i = 0; i < ours.length; i++) { const j = nid(ours[i]); if (j !== undefined && !['GND', 'VCC', 'CLK_48M'].includes(ours[i])) pairs.push([i, j, ours[i]]); }
 // BD's combinational cone: every net reachable from BD0..15 through logic only (stopping at any register or memory)
-const BDNET = new Set([...Array(16).keys()].map(i => `BD${i}`)); let bdSkips = 0;
+const BDNET = new Set([...Array(16).keys()].map(i => `BD${i}`)); let bdSkips = 0, txCaptures = 0, fpOverlaps = 0;
 { const comb = card.chips.filter(c => !P[c.part].reg && !P[c.part].write && !P[c.part].edges && c.part !== 'SST39SF040');
   let grew = true; while (grew) { grew = false; for (const c of comb) { const outs = new Set(P[c.part].out.map(o => c.pins[o]).filter(Boolean));
     if (!Object.entries(c.pins).some(([pin, n]) => !P[c.part].out.includes(pin) && BDNET.has(n))) continue;
@@ -91,6 +91,11 @@ function compare(t) {
   // the write data where Neon's model leaves it holding its last value; BD and its combinational cone aren't compared
   // there. Anything stored from them in that window would still show, in the register it went to.
   const writing = process.env.WRITEPATH !== 'neon' && card.liveGet('BUF_OE_N') === 1; if (writing) bdSkips++;
+  // Round 12 audit (2026-11-22): the strong form of Neon's false-path invariants, on our side: the TX byte latch never
+  // captures (TX_LAT_EN = 1) while the buffer is being written (the '257s enabled, an RX write window or pulse, a CPU
+  // write window). Neon checks only S_TX_DATA for two of its three declarations.
+  if (card.liveId('TX_LAT_EN') !== undefined && card.liveGet('TX_LAT_EN') === 1) { txCaptures++;
+    if (card.liveGet('BUF_DRV_OE_N') === 0 || card.liveGet('RX_WE_WIN') === 1 || card.liveGet('RX_WE_PULSE') === 1 || card.liveGet('CPU_WR_WIN') === 1) fpOverlaps++; }
   for (const [i, j, name] of pairs) { if (writing && BDNET.has(name)) continue; const x = val[i]; if (x === 2 || x === 3) { floatAt.set(name, (floatAt.get(name) || 0) + 1); continue; }
     if (x !== n[j]) { bad++; if (firstBad.length < MAXBAD) firstBad.push(`t=${t.toFixed(2)} ns edge ${edges}: ${name} ours ${x} Neon ${n[j]}`); } }
 }
@@ -126,6 +131,7 @@ try { const en = driver.enumerateDevice(1); result = { enumerated: en.ok, stage:
 const ms = (Date.now() - t0) / 1000;
 console.log(`JPUSB cross-check (${WHICH}, ${CORNER} corner): Neon's workload ${JSON.stringify(result)}; ${(sim.nowNs / 1e6).toFixed(3)} ms simulated in ${ms.toFixed(0)} s`);
 console.log(`  ${edges.toLocaleString()} edges, ${compared.toLocaleString()} compared x ${pairs.length} shared nets, ${skipped.toLocaleString()} skipped (within ${SKIP_NS} ns of an async change); ${settles.toLocaleString()} settles on our side`);
+console.log(`  TX latch captures: ${txCaptures.toLocaleString()}; during a buffer write (strong false-path invariant): ${fpOverlaps}`);
 console.log(`  BD not compared at ${bdSkips.toLocaleString()} edges in buffer write windows (finding 1's fix; WRITEPATH=neon for Neon's drawing)`);
 console.log(`  mismatches: ${bad}${stopped ? `; STOPPED: ${stopped}` : ''}`); firstBad.forEach(x => console.log('    ' + x));
 console.log(`  floating in our model at a compare (Neon holds the last value): ${floatAt.size} nets`, [...floatAt].slice(0, 12).map(([k, v]) => `${k} x${v}`).join(', '));
