@@ -16,7 +16,9 @@ for (let i = 0; i < 5; i++) sig.push([`IRQSET${i}`, 'status']);                 
 for (let i = 0; i < 5; i++) sig.push([`RSLOT${i}`, 'ctl']);                                // register RAM slot, from Control
 for (let i = 0; i < 6; i++) sig.push([`PORT${i}`, 'ctl']);                                 // I/O port number, from Control
 sig.push(['MODE', 'ctl'], ['PRIV', 'ctl'], ['IE', 'ctl'], ['PROTEN', 'ctl']);                                            // machine mode, from Control
-sig.push(['FP_RUN', 'panel'], ['FP_STEP', 'panel'], ['FP_STEPMODE', 'panel'], ['HALTED', 'panel']);
+// the KERK panel (2026-11-22, Kham): RUN/STOP, STEP, STEP-MODE into the clock generator; the old HALTED pin (no HALT
+// lamp, Kham's decision 2026-11-21) is now the panel's RESET button, to the MAX812's manual-reset input
+sig.push(['FP_RUN', 'panel'], ['FP_STEP', 'panel'], ['FP_STEPMODE', 'panel'], ['FP_RESET', 'panel']);
 
 // ---- 2. connector ----
 const rows = ['z', 'a', 'b', 'c', 'd'], pins = {};

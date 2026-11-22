@@ -433,11 +433,11 @@ function runOne(src, label, opts = {}) {
   if (opts.vramPreload) { const vr = opts.vramPreload(); for (let p = 0; p < VT.FB_SIZE; p++) if (vr[p]) { mm.vram[p] = vr[p]; const e = VT.encRails(vr[p], 8), ad = VT.fbAddr(p); VRC.mem[ad] = e; VRS.mem[ad] = e; } }
   const s = new MachineSim(m); const POR = 12;
   for (let k = 0; k < POR; k++) s.microcycle(); s.set('POR', 0);
-  let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null, atBoundary = false; const t0 = Date.now(); const trace = [];
+  let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null, atBoundary = false, stopped = 0; const t0 = Date.now(); const trace = [];
   const bad = msg => { if (!fail) fail = { cyc, instr, msg }; };
   while (!fail && !mm.halted && cyc < CAP) {
     // one microcycle, slot by slot (as MachineSim.microcycle does), so the timing pass sees every slot
-    let v = null; for (let j = 0; ; j++) { if (opts.timer) s.set('RTC_OSC', G & 1); if (opts.beforeSlot) opts.beforeSlot(s, G);
+    const wMark = s.writes.length; let v = null; for (let j = 0; ; j++) { if (opts.timer) s.set('RTC_OSC', G & 1); if (opts.beforeSlot) opts.beforeSlot(s, G);
       const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0; term.slot(lo.get('CON_TX'), G++);
       if (opts.onSlot) opts.onSlot(hi, lo, G - 1, last);
       if (STA && lo.get('RESET') !== 1) STA.analyze(lo, mm.upc, { j, last });
@@ -445,6 +445,15 @@ function runOne(src, label, opts = {}) {
       if (last) { v = lo; break; } if (j > 16) throw new Error('no CPU edge'); }
     edgePrev = edgeNow; edgeNow = G - 1;
     if (v.get('RESET') === 1) continue;
+    // the KERK panel (2026-11-22): a withheld CPU edge (CEN low through the /CEDGE slot) is a cycle in which nothing
+    // may happen. The microsim isn't stepped; the machine must hold its micro-address and PC and write no main or
+    // register RAM. Only the slot-clock side (scan-out, UART, timer) keeps going.
+    if (v.get('Control:CEN') !== 1) { stopped++;
+      const u = word(v, 'Control:UPC'); if (u !== mm.upc) bad(`stopped cycle: UPC ${u}, the microsim waits at ${mm.upc}`);
+      if (pendingPc !== null) { const g = pcOf(); if (g !== pendingPc) bad(`stopped cycle: PC ${g} vs ${pendingPc}`); }
+      const wr = s.writes.slice(wMark).filter(([r]) => ROWREF.has(r) || RFCHIPS.some(c => c.ref === r)); if (wr.length) bad(`stopped cycle wrote ${wr[0][0]}`);
+      if (opts.panel) opts.panel(G, { cyc, instr, edge: false, upc: mm.upc, mm }); continue; }
+    if (opts.panel) opts.panel(G, { cyc, instr, edge: true, upc: mm.upc, mm });
     if (pendingPc !== null) { const g = pcOf(); if (g !== pendingPc) bad(`PC ${g} vs ${pendingPc}`); pendingPc = null; }
     const modeWant = { MODE: mm.mode, PRIV: mm.priv, IE: mm.ie, PROTEN: mm.protEn };
     const want = mm.upc, got = word(v, 'Control:UPC'), mu = mm.cs.store[mm.upc];
@@ -509,6 +518,7 @@ function runOne(src, label, opts = {}) {
     const who = new Set(), v = s.v; const { P } = require('../cards/parts.js');
     for (const c of m.chips) P[c.part].eval(c, pin => v.get(c.pins[pin]) ?? 0, (pin, x) => { const n = c.pins[pin]; if (n && /^D\d+[+-]$/.test(n) && x === 1) who.add(`${c.ref}.${pin}->${n}`); }, pin => v.get(c.pins[pin]) ?? 'Z');
     console.log('bus drivers high:', [...who].slice(0, 12).join(' ') || 'none'); }
+  if (stopped) console.log(`  ${stopped} stopped cycles (no CPU edge), each checked: nothing changed`);
   console.log(`${label}: ${instr} instructions, ${cyc} microcycles, ${(Date.now() - t0) / 1000 | 0} s: ${fail ? `FAIL at microcycle ${fail.cyc} (instruction ${fail.instr}): ${fail.msg}` : capped ? 'match (ran to the cap)' : 'match'}`);
   return !fail;
 }
@@ -754,6 +764,37 @@ else if (WHICH === 'vprobe') { n = 1;   // diagnostic: IN 5 with the fill colour
   const opts = { io: true, cap: 2000, timer: (mm) => { mm.io.displayCmd = 200; u16.q = []; for (let i = 0; i < 12; i++) u16.q[i < 9 ? 9 + i : 18 + i - 9] = (e >> i) & 1; } ,
     onSlot: (hi, lo, g, last) => { if (process.env.VID_DEBUG && lo.get('Video:CW_/IN') === 0 || process.env.VID_DEBUG && last) console.log(`  [p] slot ${g}${last ? ' EDGE' : ''} /IN ${lo.get('Video:CW_/IN')} /BIO ${lo.get('Video:CW_/BIO')} VSEL ${lo.get('Video:VSEL')} SEL ${lo.get('Video:SEL0')}${lo.get('Video:SEL1')} /LDIO ${lo.get('Video:/LDIO')} /IOCE ${lo.get('Video:/IOCE')} R2 ${lo.get('Video:R2')} FC ${[...Array(12).keys()].reduce((a, i) => a + (lo.get('Video:FC' + i) << i), 0)} PORT ${[0,1,2,3,4,5].reduce((a, i) => a + (lo.get('PORT' + i) << i), 0)}`); } };
   ok += runOne(`MAIN: IN R2, #5\nIN R3, #2\nIN R4, #5\nHALT\n`, 'vprobe', opts); }
+else if (WHICH === 'panel') { n = 1;
+  // ---- the KERK panel on the whole machine (2026-11-22). The directed program, with the panel driven the way a person
+  // at it would: run, STOP (instruction mode), 3 STEPs, microcycle mode and 3 STEPs, back to instruction mode, 1 STEP,
+  // RUN to the end. The lines are the debounced levels (the MAX6817/MAX6816 are on the panel). Every executed cycle is
+  // still in lockstep; every stopped cycle must change nothing (runOne). Judged here, by counts the microsim keeps:
+  // parked on FETCH after STOP; exactly one instruction per instruction STEP; exactly one microcycle per microcycle
+  // STEP; back to instruction mode finishes the current instruction; RUN reaches the program's HALT.
+  const FETCH = new MicroMachine(16).cs.addr.FETCH;
+  const P = { run: 1, step: 1, mode: 1 }; let pressEnd = -1, phase = 0, quiet = 0, mark = null, k = 0; const log = [], errs = [];
+  const press = G => { pressEnd = G + 24; quiet = 0; };
+  const opts = {
+    beforeSlot: (sim, G) => { sim.set('FP_RUN', P.run); sim.set('FP_STEP', G < pressEnd ? 0 : 1); sim.set('FP_STEPMODE', P.mode); },
+    panel: (G, st) => {
+      if (st.edge) quiet = 0; else quiet++;
+      const settled = G > pressEnd + 8 && quiet >= 40;
+      const at = () => ({ instr: st.instr, cyc: st.cyc, upc: st.upc });
+      if (phase === 0 && st.instr >= 25) { P.run = 0; phase = 1; log.push(`STOP at instruction ${st.instr}`); }
+      else if (phase === 1 && settled) { if (st.upc !== FETCH) errs.push(`after STOP parked at micro-address ${st.upc}, not FETCH`); mark = at(); log.push(`parked on FETCH after instruction ${st.instr}`); press(G); phase = 2; k = 0; }
+      else if (phase === 2 && settled) { if (st.instr !== mark.instr + 1 || st.upc !== FETCH) errs.push(`instruction STEP ${k + 1}: instructions ${mark.instr} -> ${st.instr}, parked at ${st.upc} (want +1, on FETCH)`);
+        log.push(`instruction STEP ${k + 1}: ${st.instr - mark.instr} instruction, ${st.cyc - mark.cyc} microcycles`); mark = at();
+        if (++k < 3) press(G); else { P.mode = 0; phase = 3; k = 0; quiet = 0; } }
+      else if (phase === 3 && G > pressEnd + 8 && quiet >= 40 && k === 0 && !mark.m) { mark = { ...at(), m: 1 }; press(G); }
+      else if (phase === 3 && settled && mark.m) { if (st.cyc !== mark.cyc + 1) errs.push(`microcycle STEP ${k + 1}: ${st.cyc - mark.cyc} microcycles (want 1)`);
+        log.push(`microcycle STEP ${k + 1}: 1 microcycle, now micro-address ${st.upc}`); mark = { ...at(), m: 1 };
+        if (++k < 3) press(G); else { P.mode = 1; phase = 4; quiet = 0; } }
+      else if (phase === 4 && settled) { const mid = mark.upc !== FETCH; if (st.upc !== FETCH || st.instr !== mark.instr + (mid ? 1 : 0)) errs.push(`back to instruction mode: ${mark.instr} -> ${st.instr}, at ${st.upc}`);
+        log.push(`instruction mode again: ${mid ? 'finished the instruction it was in' : 'was already on FETCH'}, parked`); mark = at(); press(G); phase = 5; }
+      else if (phase === 5 && settled) { if (st.instr !== mark.instr + 1 || st.upc !== FETCH) errs.push(`last instruction STEP: ${mark.instr} -> ${st.instr}`); log.push('one more instruction STEP: 1 instruction'); P.run = 1; phase = 6; log.push('RUN'); } },
+    finish: () => { if (errs.length) return errs[0]; if (phase !== 6) return `the panel script stopped in phase ${phase}`;
+      console.log('  KERK panel: ' + log.join('; ')); } };
+  ok += runOne(DIRECTED, 'panel', opts); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);

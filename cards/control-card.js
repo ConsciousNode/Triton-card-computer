@@ -10,7 +10,8 @@ const { Card } = require('./netlist.js');
 const T = (k, r) => `${k}${r ? '-' : '+'}`;
 const CW = ['SQ0', 'SQ1', 'SQ2', 'CFETCH', 'RET', 'CD0', 'CD1', 'CD2', 'CD3', ...[...Array(14).keys()].map(i => `C${i}`),
   'SLS0', 'SLS1', ...[...Array(5).keys()].map(i => `FS${i}`), 'RSK0', 'RSK1', '/IR0CE', '/IR1CE', 'PCOP0', 'PCOP1', 'PCC+', 'PCC-',
-  'UOP0', 'UOP1', 'BS0', 'BS1', '/CBUSOE', '/UPEN', 'SPRWR', 'SPR', 'RFBUS', 'PSW0', 'PSW1', 'ACK', 'BT0', 'BT1'];
+  'UOP0', 'UOP1', 'BS0', 'BS1', '/CBUSOE', '/UPEN', 'SPRWR', 'SPR', 'RFBUS', 'PSW0', 'PSW1', 'ACK', 'BT0', 'BT1',
+  '/ATF'];   // 2026-11-22: low only in the FETCH word, for the KERK panel's instruction step (clockgen.js); a spare bit
 const TBL = require('./control-tables.js');
 
 function build(romsDir, csImages, mutant, { resetToFetch = false } = {}) {
@@ -182,6 +183,7 @@ function cardWord(mu, addr, fixed) {
   const bt = mu.BUS === 'IRQV' ? 1 : (mu.BUS === 'RF' && rs === 'SPR') ? 2 : 0; f.BT0 = bt & 1; f.BT1 = bt >> 1;
   f.SPRWR = mu.RF_WR && rs === 'SPR' ? 1 : 0; f.SPR = rs === 'SPR' ? 1 : 0; f.RFBUS = mu.BUS === 'RF' ? 1 : 0;
   const psw = { ENTER: 1, RESTORE: 2 }[mu.PSW] || 0; f.PSW0 = psw & 1; f.PSW1 = psw >> 1; f.ACK = mu.IRQ_ACK ? 1 : 0;
+  f['/ATF'] = addr === fixed.FETCH ? 0 : 1;
   let w = 0n; CW.forEach((n, i) => { if (f[n]) w |= 1n << BigInt(i); }); return w;
 }
 module.exports = { build, cardWord, CW };

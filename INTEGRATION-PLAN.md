@@ -293,8 +293,13 @@ could pass every card test. The Registers card's test catching a Control card fa
     after the fix: poop, console, directed match. Raw output: `integration/RESULTS-stage3-video.txt`.
   - **Stage 3 is done:** every device on the machine (console, timer/RTC, SD, PS/2 keyboard and mouse, Video) runs
     on the whole machine in lockstep with the microsim.
+- **The KERK front panel: drawn and tested (2026-11-22, about 4 am).** Kham's controls: RESET, RUN/STOP, STEP,
+  STEP-MODE (instruction or microcycle), power LED; the old HALTED pin is now FP_RESET. Five chips on the Control card
+  (clockgen.js) plus a spare control-store bit (/ATF, "this word is FETCH"); MAX6817/MAX6816 debouncers on the panel.
+  clockgen-test 24/24 and 12/12 mutants. Whole machine `panel` workload: run, STOP, 3 instruction steps, 3 microcycle
+  steps, back to instruction mode, 1 step, RUN to HALT, in lockstep; 409 stopped cycles each checked to change nothing.
+  Regression: directed, POOP OK, traps, timer and console match. Details: `KERK-PANEL.md`.
 - **Next:**
-  - the KERK front panel;
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.
 

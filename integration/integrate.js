@@ -22,7 +22,7 @@ const J2 = new Set([...[...Array(19).keys()].map(i => `SA${i}`), ...[...Array(12
   ...[...Array(12).keys()].map(i => `SO${i}`), '/SWR', 'VBUSY']);
 const J2_ALIAS = { Memory: { VWEH: 'VBUSY' } };   // card -> { its local name: the J2 name }
 // the world: inputs the machine reads from parts with no simulator model, and outputs it gives to the world
-const WORLD_IN = ['SCLK', 'POR', 'LOAD', 'SD_MISO', 'SD_CD', 'K_CLK', 'K_DATA', 'M_CLK', 'M_DATA', 'RTC_OSC'];
+const WORLD_IN = ['SCLK', 'POR', 'LOAD', 'FP_RUN', 'FP_STEP', 'FP_STEPMODE', 'SD_MISO', 'SD_CD', 'K_CLK', 'K_DATA', 'M_CLK', 'M_DATA', 'RTC_OSC'];
 const WORLD_OUT = { IO: ['CON_TX', 'SD_MOSI', 'SD_SCK', 'SD_/CS', 'K_CLK_OUT', 'K_DATA_OUT', 'M_CLK_OUT', 'M_DATA_OUT'] };
 const RAILS = new Set(['GND', 'VCC']);
 

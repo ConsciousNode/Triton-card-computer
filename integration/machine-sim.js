@@ -12,7 +12,7 @@ const path = require('path'); const { P } = require(path.join(__dirname, '../car
 const CK = { LVC74: ['1CLK', '2CLK'], ALVCH16823: ['1CLK', '2CLK'], LVC161: ['CP', 'CLK'], LVC574: ['CLK'], LVC164: ['CLK'], LV164: ['CLK'], LVC165: ['CLK'] };
 class MachineSim {
   constructor(m, world = {}) {
-    this.m = m; this.w = new Map([['SCLK', 0], ['POR', 1], ['LOAD', 0], ['SD_MISO', 1], ['SD_CD', 1], ['K_CLK', 1], ['K_DATA', 1], ['M_CLK', 1], ['M_DATA', 1], ['RTC_OSC', 0], ...Object.entries(world)]);
+    this.m = m; this.w = new Map([['SCLK', 0], ['POR', 1], ['LOAD', 0], ['FP_RUN', 1], ['FP_STEP', 1], ['FP_STEPMODE', 1], ['SD_MISO', 1], ['SD_CD', 1], ['K_CLK', 1], ['K_DATA', 1], ['M_CLK', 1], ['M_DATA', 1], ['RTC_OSC', 0], ...Object.entries(world)]);
     this.regs = m.chips.filter(c => P[c.part].reg).map(c => ({ c, halves: CK[c.part].filter(k => c.pins[k] !== undefined && c.pins[k] !== 'GND') }));
     this.edgy = m.chips.filter(c => P[c.part].edges);
     this.srams = m.chips.filter(c => P[c.part].write && c.pins['/WE'] !== 'VCC');

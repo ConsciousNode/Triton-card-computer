@@ -31,6 +31,26 @@
 //     machine. Interrupts don't wake it (HALT as the emulator has it). Only spare gates: no new chips.
 //     Mutant HALT_IGNORED: the wiring before (CEN's D straight from CEDGE).
 //
+//   - THE KERK PANEL (2026-11-22): RUN/STOP, STEP and STEP-MODE come in on the backplane (FP_RUN, FP_STEP,
+//     FP_STEPMODE), already debounced on the panel (MAX6817 + MAX6816), high = released/run/instruction-mode. The
+//     panel's RESET button is the old HALTED pin, now FP_RESET, wired to the MAX812's manual-reset input (debounced,
+//     internal 20k pull-up), a world part like POR itself.
+//     - U209 ('574 on SCLK) synchronizes them: RUN1->RUN2, STEP1->STEP2->STEP3, MODE1->MODE2.
+//     - STEPP = STEP3 & /STEP2: one slot per press (released -> pressed).
+//     - PEND (U213 half 1, on SCLK, cleared by RESET): set by STEPP, kept until spent.
+//     - ALLOW = RUN2 | PEND | (MODE2 & /ATF) | RESET: the CPU edge may happen (RESET: the reset synchronizer needs
+//       CPU edges to release, so a machine powered up stopped in microcycle mode still comes out of reset). /ATF comes from the Control card's own
+//       control-store slice (a spare bit, low only in the FETCH word), so in instruction mode a stopped machine runs on
+//       to the next FETCH and parks there, exactly where HALT parks; in microcycle mode it stops at the next edge.
+//     - The decision is made ONCE per cycle, with the write strobe: WSTB_NEXT = (slot 1 or 5) & ALLOW, and GOQ (U213
+//       half 2) is WSTB one slot later, i.e. in the /CEDGE slot. CEN_D = CEDGE & /HALTQ & GOQ. So an edge always has
+//       its write strobe and a withheld edge has none: a machine stopped mid-instruction never repeats a register or
+//       RAM write, and a press landing between the two (slot 2) waits for the next cycle instead of tearing this one.
+//     - SPENT = CEN & !(MODE2 & /ATF): the edge that uses a step up (any edge in microcycle mode, the FETCH edge in
+//       instruction mode), sampled at the same SCLK rise as the CPU edge. PEND_D = STEPP | (PEND & !SPENT).
+//     Mutants: PANEL_IGNORED (ALLOW tied high), STEP_NEVER_SPENT (PEND never clears), MODE_IGNORED (always
+//     instruction mode).
+//
 // Slot counter: a '161 on SCLK, loaded with 0 at the edge that ends the /CEDGE slot. CEDGE_NEXT, the value /CEDGE takes
 // for the next slot, is decoded from the count: slot 2 and not stretched, or slot 6.
 //   CEDGE_NEXT = Q1 & /Q0 & (Q2 | /STRETCH)
@@ -40,7 +60,7 @@
 // cards through a second gate of the same '08 package so both clocks see matched delay.
 'use strict';
 function build(c, { mutant = null } = {}) {
-  c.input('SCLK', 'POR', 'LOAD', 'STRETCH');
+  c.input('SCLK', 'POR', 'LOAD', 'STRETCH', 'FP_RUN', 'FP_STEP', 'FP_STEPMODE');
   const halt = mutant !== 'HALT_IGNORED';
   // U200: '161 slot counter. Loads 0 when /CEDGE is low (at the edge ending the /CEDGE slot); counts otherwise.
   c.add('U200', 'LVC161', { MR_N: 'VCC', CP: 'SCLK', PE_N: mutant === 'NO_RELOAD' ? 'VCC' : '/CEDGE', CEP: 'VCC', CET: 'VCC',
@@ -64,7 +84,17 @@ function build(c, { mutant = null } = {}) {
     '2D': mutant === 'ONE_FLOP_RELEASE' ? 'GND' : 'RST1', '2CLK': 'CLK', '2/CLR': 'VCC', '2/PRE': '/RSTREQ', '2Q': 'RESET' });
   // U207: '08: WSTB_NEXT = SL1 & (Q2 | /STRETCH). U206: '74 half 1 registers it on SCLK (/Q is the backplane /WSTB);
   // half 2 spare. Mutant WSTB_ALWAYS: no strobe (/WSTB tied low), the wiring before 2026-11-20.
-  c.add('U207', 'LVC08', { '1A': 'SL1', '1B': 'LONGOK', '1Y': 'WSTB_NEXT', ...(halt ? { '2A': 'CEDGE', '2B': '/HALTQ', '2Y': 'CEN_D' } : { '2A': 'GND', '2B': 'GND' }), '3A': 'GND', '3B': 'GND', '4A': 'GND', '4B': 'GND' });
+  const pnl = mutant !== 'PANEL_IGNORED';
+  c.add('U207', 'LVC08', { '1A': 'SL1', '1B': 'LONGOK', '1Y': 'WSTB_PRE', ...(halt ? { '2A': 'CEDGE', '2B': '/HALTQ', '2Y': 'CEN_D0' } : { '2A': 'CEDGE', '2B': 'VCC', '2Y': 'CEN_D0' }),
+    '3A': 'CEN_D0', '3B': pnl ? 'GOQ' : 'VCC', '3Y': 'CEN_D', '4A': 'WSTB_PRE', '4B': pnl ? 'ALLOW' : 'VCC', '4Y': 'WSTB_NEXT' });
+  // ---- the KERK panel (2026-11-22): see the header ----
+  c.add('U209', 'LVC574', { CLK: 'SCLK', '/OE': 'GND', D1: 'FP_RUN', Q1: 'RUN1', D2: 'RUN1', Q2: 'RUN2', D3: 'FP_STEP', Q3: 'STEP1', D4: 'STEP1', Q4: 'STEP2',
+    D5: 'STEP2', Q5: 'STEP3', D6: mutant === 'MODE_IGNORED' ? 'VCC' : 'FP_STEPMODE', Q6: 'MODE1', D7: 'MODE1', Q7: 'MODE2', D8: 'GND' });
+  c.add('U210', 'LVC04', { '1A': 'STEP2', '1Y': '/STEP2', '2A': 'IDLEOK', '2Y': 'SPSEL', '3A': 'SPENT', '3Y': '/SPENT', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
+  c.add('U211', 'LVC08', { '1A': 'STEP3', '1B': '/STEP2', '1Y': 'STEPP', '2A': 'MODE2', '2B': 'CW_/ATF', '2Y': 'IDLEOK',
+    '3A': 'CEN', '3B': 'SPSEL', '3Y': 'SPENT', '4A': 'PEND', '4B': mutant === 'STEP_NEVER_SPENT' ? 'VCC' : '/SPENT', '4Y': 'PKEEP' });
+  c.add('U212', 'LVC32', { '1A': 'RUN2', '1B': 'PEND', '1Y': 'RUNPEND', '2A': 'RUNPEND', '2B': 'IDLEOK', '2Y': 'ALLOW0', '3A': 'STEPP', '3B': 'PKEEP', '3Y': 'PEND_D', '4A': 'ALLOW0', '4B': 'RESET', '4Y': 'ALLOW' });
+  c.add('U213', 'LVC74', { '1D': 'PEND_D', '1CLK': 'SCLK', '1/CLR': halt ? '/RESETC' : 'VCC', '1/PRE': 'VCC', '1Q': 'PEND', '2D': 'WSTB', '2CLK': 'SCLK', '2/CLR': 'VCC', '2/PRE': 'VCC', '2Q': 'GOQ' });
   c.add('U206', 'LVC74', { '1D': 'WSTB_NEXT', '1CLK': 'SCLK', '1/CLR': 'VCC', '1/PRE': 'VCC', '1Q': 'WSTB', '1/Q': mutant === 'WSTB_ALWAYS' ? 'WSTB_UNUSED' : '/WSTB',
     ...(halt ? { '2D': 'HALT_D', '2CLK': 'CLK', '2/CLR': '/RESETC', '2/PRE': 'VCC', '2Q': 'HALTQ', '2/Q': '/HALTQ' } : { '2D': 'GND', '2CLK': 'GND', '2/CLR': 'VCC', '2/PRE': 'VCC' }) });
   if (mutant === 'WSTB_ALWAYS') c.add('U208', 'LVC04', { '1A': 'VCC', '1Y': '/WSTB', '2A': 'GND', '3A': 'GND', '4A': 'GND', '5A': 'GND', '6A': 'GND' });
@@ -73,4 +103,4 @@ function build(c, { mutant = null } = {}) {
   c.add('RN200', 'RPACK8G', { P2: 'IRQSET3', P3: 'IRQSET4' });
   return c;
 }
-module.exports = { build, MUTANTS: ['NO_RELOAD', 'DECODE_SLOT3', 'CLK_UNGATED', 'STRETCH_IGNORED', 'LOAD_IGNORED', 'CEN_ON_RISING', 'ONE_FLOP_RELEASE', 'WSTB_ALWAYS', 'HALT_IGNORED'] };
+module.exports = { build, MUTANTS: ['NO_RELOAD', 'DECODE_SLOT3', 'CLK_UNGATED', 'STRETCH_IGNORED', 'LOAD_IGNORED', 'CEN_ON_RISING', 'ONE_FLOP_RELEASE', 'WSTB_ALWAYS', 'HALT_IGNORED', 'PANEL_IGNORED', 'STEP_NEVER_SPENT', 'MODE_IGNORED'] };
