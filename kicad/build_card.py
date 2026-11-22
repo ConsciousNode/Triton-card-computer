@@ -61,6 +61,7 @@ def main(js, out, height=None):
     # chips: same-sized parts together (sorted by footprint, then netlist order), shelf-packed with the decoupling
     # capacitor beside each IC; when the front is full, the back (footprints flipped to B.Cu)
     gap, x0 = 1.0, 18.5
+    COL_FILL = float(os.environ.get('COL_FILL', '1.0'))
     missing, placed, caps = set(), [], 0; items = []
     owner = {}   # cap -> the chip it was made for (2026-11-22: chosen by nearness, C93 followed U120 onto C75 on the ALU)
     for i, c in enumerate(d['chips']):
@@ -99,7 +100,10 @@ def main(js, out, height=None):
     cols = []; cur = []; cur_h = 0.0
     for k in order:
         h = pcbnew.ToMM(items[k][6].GetHeight())
-        if cur and cur_h + h + gap > H - 3: cols.append(cur); cur, cur_h = [], 0.0
+        # COL_FILL (2026-11-22): a column may fill only this share of the board's height, so the chips in it keep a
+        # routing channel between them (the ALU's left column was packed at the 1 mm minimum: U84 and U83 sat 1.5 mm
+        # apart and one connection between them could not be routed, by Freerouting or by local rip-up)
+        if cur and cur_h + h + gap > (H - 3) * COL_FILL: cols.append(cur); cur, cur_h = [], 0.0
         cur.append(k); cur_h += h + gap
     if cur: cols.append(cur)
     slots = {}; side, x = 'F', x0
