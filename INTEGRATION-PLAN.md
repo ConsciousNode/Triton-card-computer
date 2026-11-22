@@ -242,8 +242,19 @@ could pass every card test. The Registers card's test catching a Control card fa
     - two buses were read while floating; fixed with LVCH245 bus-hold;
     - the library's '161/'74 bug above.
   - The write path's timing is Neon's Round 12.
+- **Stage 3 part 2, SD on the whole machine: match (2026-11-21, evening).**
+  - `program-lockstep.js sd`: the bare drivers' own test (`testProgram({ nKeys: 0 })`): SD init, read sector 5,
+    write sector 7, read it back, PRNUM after each. The microsim has BareIO with one SdCard; the machine's I/O card
+    talks at its pins (SD_MISO in; IO:SCK, SD_MOSI, SD_/CS out) to a second SdCard with the same image, through
+    SdPins lifted from `cards/io-ports-test.js`.
+  - 22,572 instructions, 217,753 microcycles, lockstep the whole way. 4,846 SPI log entries (4,845 bytes plus the
+    chip-select changes) identical; both SD images identical; sector 5 read right, sector 7 written and read back;
+    the console printed `0000` with 0 framing errors. 57 min. Raw output: `integration/RESULTS-stage3-sd.txt`.
+  - Positive control `SD_CONTROL=flip9`: one bit flipped in unread sector 9, machine side only, so only the image
+    comparison can see it. (Result below when it lands.)
 - **Next:**
-  - the rest of stage 3 part 2: SD and PS/2 on the whole machine, and the video ports;
+  - the rest of stage 3 part 2: PS/2 on the whole machine (needs the declared sync rule: frames clocked at the pins in
+    real time; the microsim's port learns of a frame at the boundary after the card latches it), then the video ports;
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.
 

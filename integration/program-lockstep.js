@@ -366,6 +366,25 @@ POP R3
 POP R2
 IRET
 `;
+
+// ---- stage 3 part 2 (2026-11-21, evening): the SD card on the whole machine. The program is the bare drivers' own
+// test (microsim/bare-drivers.js testProgram, nKeys 0): SD init, read sector 5 to RAM 20000, write RAM 21000 to sector
+// 7, read sector 7 back to 22000, PRNUM after each (the console must print "0000"). The microsim runs BareIO with one
+// SdCard; the machine's I/O card talks to a second SdCard, same image, at its pins (SD_MISO in; SD_MOSI, the card's
+// own SCK and SD_/CS out). Compared beyond the lockstep: the SPI byte streams (MOSI:MISO pairs and chip-select changes)
+// are identical, and so are both SD images at the end.
+// SdPins is lifted from cards/io-ports-test.js (Kehai Interim, 2026-11-19), unchanged except that a mismatch is
+// collected instead of failing the run.
+const sdBad = [];
+class SdPins {
+  constructor(sd) { this.sd = sd; this.cs = 0; this.n = 0; this.inb = 0; this.r = 0xFF; this.log = []; }
+  miso() { if (!this.cs) return 1; const r = this.n === 0 ? this.sd.peek() : this.r; return (r >> (7 - this.n)) & 1; }
+  setCs(on) { if (on !== this.cs) { this.sd.setCs(on); this.cs = on; this.n = 0; this.log.push(`cs${on}`); } }
+  rise(mosi) { if (this.n === 0) { this.sd.tickWrite(); this.r = this.cs ? this.sd.peek() : 0xFF; }
+    this.inb = ((this.inb << 1) | mosi) & 255; if (++this.n < 8) return;
+    const got = this.sd.xfer(this.inb); if (got !== this.r) sdBad.push(`SD pins: xfer answered ${got} where peek said ${this.r}`);
+    this.log.push(`${this.inb}:${got}`); this.n = 0; }
+}
 // ---- one program on a fresh machine
 const m = compose({ mutants: MUT }); const chip = new Map(m.chips.map(c => [c.ref, c]));
 if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.STA });   // STA=table or STA=cycle
@@ -393,7 +412,7 @@ function runOne(src, label, opts = {}) {
   for (const c of m.chips) { if (c.q) c.q = c.part === 'LVC74' ? [0, 0, 0] : []; }
   for (const [a, b] of ROWS) { a.mem.fill(0); b.mem.fill(0); } for (const c of RFCHIPS) c.mem.fill(0);
   const mm = new MicroMachine(RAMSIZE); mm.rf[SLOT.ULIMIT] = 0; mm.upc = mm.cs.addr.RESET;   // power-on: the RESET routine first
-  if (opts.io) mm.io = new BareIO(mm, new SdCard(4));
+  if (opts.io) mm.io = new BareIO(mm, opts.sd ? opts.sd(mm) : new SdCard(4));
   const term = uart(); let G = 0, waited = 0, edgeNow = -1, edgePrev = -1;
   // the microsim's timer runs on this machine's slot clock (stage 3 part 2, 2026-11-21): an OUT happens at the edge
   // of the cycle just run (edgeNow), an instruction boundary is the edge before it (edgePrev), as the card-level
@@ -409,7 +428,7 @@ function runOne(src, label, opts = {}) {
   const bad = msg => { if (!fail) fail = { cyc, instr, msg }; };
   while (!fail && !mm.halted && cyc < CAP) {
     // one microcycle, slot by slot (as MachineSim.microcycle does), so the timing pass sees every slot
-    let v = null; for (let j = 0; ; j++) { if (opts.timer) s.set('RTC_OSC', G & 1);
+    let v = null; for (let j = 0; ; j++) { if (opts.timer) s.set('RTC_OSC', G & 1); if (opts.beforeSlot) opts.beforeSlot(s, G);
       const { hi, lo } = s.slot(); const last = hi.get('/CEDGE') === 0; term.slot(lo.get('CON_TX'), G++);
       if (opts.onSlot) opts.onSlot(hi, lo, G - 1, last);
       if (STA && lo.get('RESET') !== 1) STA.analyze(lo, mm.upc, { j, last });
@@ -424,7 +443,7 @@ function runOne(src, label, opts = {}) {
     // the devices' instruction-boundary tick: MicroMachine.step() calls io.tick() before an instruction's first cycle;
     // this harness drives cycle() directly, so it ticks here, at the same point (2026-11-21: without it the timer model
     // never raised its IRQ and the whole machine, correctly, took one the microsim didn't)
-    if (opts.io && atBoundary) { mm.io.tick(); atBoundary = false; }
+    if (opts.io && atBoundary) { mm.io.tick(); if (opts.onTick) opts.onTick(mm); atBoundary = false; }
     mm.lastBus = ABORTED; const r = mm.cycle(); cyc++;
     const aborted = mm.lastBus === ABORTED; if (aborted) mm.lastBus = undefined;
     // an instruction fetch puts the tryte on the bus (the Memory card drives it, the Control card's IR loads from it);
@@ -511,6 +530,32 @@ else if (WHICH === 'timer') { n = 1;
       if (!found) return `the CPU's assembled values don't include the last snapshot (${tm.snapT}, ${tm.snapR})`;
       console.log(`  timer: r0 slot ${r0}, ${tickSlots} TICK slots, ${fires.length} firings = model's, ${pulses.length} IRQSET0 pulses (one per firing, first edge after), ${mm.mem[TCOUNT]} timer interrupts taken; last snapshot ticks ${tm.snapT}, RTC ${tm.snapR.toString(16)} (counted ${tm.snapR - RTC0})`); } };
   ok += runOne(TIMER, 'timer', opts); }
+else if (WHICH === 'sd') { n = 1;
+  const { testProgram, VBR: DVBR } = require('../microsim/bare-drivers.js');
+  let sd0 = 77; const r0 = () => (sd0 = (sd0 * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const sector5 = Array.from({ length: 729 }, () => Math.floor(r0() * 19683) - 9841);
+  const image = new SdCard(64); const bytes = new Uint8Array(1536); sector5.forEach((t, i) => { const u = t + 9841; bytes[2 * i] = u >> 8; bytes[2 * i + 1] = u & 255; }); image.data.set(bytes, 5 * 1536);
+  const pattern = Array.from({ length: 729 }, (_, i) => ((i * 37) % 19683) - 9841 + (i % 3));
+  let msd = null, msLog = [], msCs = 0; const pins = new SdPins((() => { const c = new SdCard(64); c.data.set(image.data); if (process.env.SD_CONTROL === 'flip9') c.data[9 * 1536 + 100] ^= 1; return c; })()); // positive control: an unread sector differs only machine-side, so only the image check can see it
+  let prevSck = 0;
+  const opts = { io: true, cap: 600000,
+    sd: () => { msd = new SdCard(64); msd.data.set(image.data); const x = msd.xfer.bind(msd), sc = msd.setCs.bind(msd);
+      msd.xfer = b => { const r = x(b); msLog.push(`${b & 255}:${r}`); return r; };
+      msd.setCs = on => { const v = on ? 1 : 0; if (v !== msCs) { msCs = v; msLog.push(`cs${v}`); } sc(on); }; return msd; },
+    onTick: () => pins.sd.tickWrite(),
+    preload: () => pattern.map((v, i) => [21000 + i, v]),
+    beforeSlot: (sim) => sim.set('SD_MISO', pins.miso()),
+    onSlot: (hi, lo) => { const sck = hi.get('IO:SCK'); if (prevSck === 0 && sck === 1) pins.rise(hi.get('SD_MOSI')); prevSck = lo.get('IO:SCK');
+      pins.setCs(lo.get('SD_/CS') === 0 ? 1 : 0); },
+    finish: (mm) => {
+      if (sdBad.length) return sdBad[0];
+      if (pins.log.length !== msLog.length || pins.log.some((e, i) => e !== msLog[i])) { const i = pins.log.findIndex((e, j) => e !== msLog[j]);
+        return `SPI stream differs at entry ${i}: machine ${pins.log.slice(i, i + 3)} vs microsim ${msLog.slice(i, i + 3)} (lengths ${pins.log.length}/${msLog.length})`; }
+      if (!pins.sd.data.every((v, i) => v === msd.data[i])) return 'the SD images differ';
+      if (mm.io.consoleOut !== '0000') return `console printed ${JSON.stringify(mm.io.consoleOut)}, expected "0000"`;
+      for (let i = 0; i < 729; i++) { if (mm.mem[20000 + i] !== sector5[i]) return `sector 5 word ${i} read wrong`; if (mm.mem[22000 + i] !== pattern[i]) return `sector 7 read-back word ${i} wrong`; }
+      console.log(`  SD: ${pins.log.length} SPI log entries identical (${pins.log.filter(e => !e.startsWith('cs')).length} bytes), images identical, sector 5 read, sector 7 written and read back, console "0000"`); } };
+  ok += runOne(testProgram({ nKeys: 0 }), 'sd', opts); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);

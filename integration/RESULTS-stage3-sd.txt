@@ -1,0 +1,8 @@
+  terminal: "0000" (4 bytes, 0 framing errors); the CPU waited 66780 microcycles on IORDY
+  SD: 4846 SPI log entries identical (4845 bytes), images identical, sector 5 read, sector 7 written and read back, console "0000"
+sd: 22572 instructions, 217753 microcycles, 3441 s: match
+program-lockstep: 1/1 programs match
+
+real	57m27.732s
+user	56m57.302s
+sys	0m14.544s
