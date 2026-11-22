@@ -391,6 +391,11 @@ if (process.env.STA) STA = new Timing(m, { scale: STA_SCALE, mode: process.env.S
 let TS = null; if (process.env.TSIM) TS = new TimingSim(m, { scale: STA_SCALE });          // TSIM=1: the delay simulation (timing-sim.js)
 const RAMSIZE = 4782969;
 const ROWS = []; for (let r = 0; r < rowsFor(RAMSIZE); r++) ROWS.push([chip.get(`Memory.U${240 + 2 * r}`), chip.get(`Memory.U${241 + 2 * r}`)]);
+const VT = require('../cards/video-tables.js'), VRC = chip.get('Memory.U256'), VRS = chip.get('Memory.U257');
+const PIX = new Map(); for (let v = -364; v <= 364; v++) PIX.set(VT.encRails(v, 8), v);
+const pixOf = e => PIX.has(e) ? PIX.get(e) : `raw ${e}`;
+const vramAudit = mm => { for (let p = 0; p < VT.FB_SIZE; p++) { const e = VT.encRails(mm.vram[p], 8), ad = VT.fbAddr(p);
+  if (VRC.mem[ad] !== e || VRS.mem[ad] !== e) return `VRAM audit: pixel ${p} (row ${Math.floor(p / 729)}, column ${p % 729}): VRAM-C ${pixOf(VRC.mem[ad])}, VRAM-S ${pixOf(VRS.mem[ad])}, microsim ${mm.vram[p]}`; } return null; };
 const ROWREF = new Map(); ROWS.forEach(([a, b], r) => { ROWREF.set(a.ref, r); ROWREF.set(b.ref, r); });
 const ramGet = x => { const { row, addr } = loc(x); if (!ROWS[row]) return NaN; return dec(ROWS[row][0].mem[addr] + ROWS[row][1].mem[addr] * 65536, 9); };
 const ramPut = (x, v) => { const { row, addr } = loc(x); const b = enc(v, 9); ROWS[row][0].mem[addr] = b % 65536; ROWS[row][1].mem[addr] = Math.floor(b / 65536); };
@@ -421,7 +426,11 @@ function runOne(src, label, opts = {}) {
   code.forEach((v, i) => { mm.mem[i] = v; ramPut(i, v); });
   if (opts.preload) for (const [a, v] of opts.preload(asm.symbols)) { mm.mem[a] = v; ramPut(a, v); }
   const CAP = opts.cap || 20000;
-  const mmWrites = new Set(); const mw = mm.memWrite.bind(mm); mm.memWrite = (a, v) => { mmWrites.add(mm.phys(a)); mw(a, v); };
+  // CPU stores to the framebuffer (FB_BASE..) live in mm.vram and in the Memory card's VRAM-C/VRAM-S (U256/U257), not
+  // in main RAM; they're checked in both chips at the boundary (2026-11-21, stage 3 video)
+  const mmWrites = new Set(), fbWrites = new Set(); const mw = mm.memWrite.bind(mm);
+  mm.memWrite = (a, v) => { const x = mm.phys(a); if (x >= VT.FB_BASE && x < VT.FB_BASE + VT.FB_SIZE) fbWrites.add(x - VT.FB_BASE); else mmWrites.add(x); mw(a, v); };
+  if (opts.vramPreload) { const vr = opts.vramPreload(); for (let p = 0; p < VT.FB_SIZE; p++) if (vr[p]) { mm.vram[p] = vr[p]; const e = VT.encRails(vr[p], 8), ad = VT.fbAddr(p); VRC.mem[ad] = e; VRS.mem[ad] = e; } }
   const s = new MachineSim(m); const POR = 12;
   for (let k = 0; k < POR; k++) s.microcycle(); s.set('POR', 0);
   let cyc = 0, instr = 0, fail = null, pendingPc = null, prevLo = null, atBoundary = false; const t0 = Date.now(); const trace = [];
@@ -466,7 +475,9 @@ function runOne(src, label, opts = {}) {
       for (const [ref, a] of s.writes) { if (!ROWREF.has(ref)) continue; const x = unloc(ROWREF.get(ref), a);
         if (!mmWrites.has(x)) { bad(`chip ${ref} wrote address ${x}, which the microsim did not write`); break; }
         if (ramGet(x) !== mm.mem[x]) { bad(`RAM ${x}: chips ${ramGet(x)} vs ${mm.mem[x]}`); break; } }
-      mmWrites.clear(); s.writes.length = 0; pendingPc = mm.pc; }
+      for (const p of fbWrites) { const e = VT.encRails(mm.vram[p], 8), ad = VT.fbAddr(p);
+        if (VRC.mem[ad] !== e || VRS.mem[ad] !== e) { bad(`framebuffer pixel ${p}: VRAM-C ${pixOf(VRC.mem[ad])}, VRAM-S ${pixOf(VRS.mem[ad])} vs ${mm.vram[p]}`); break; } }
+      mmWrites.clear(); fbWrites.clear(); s.writes.length = 0; pendingPc = mm.pc; }
   }
   if (!fail) for (const [a, b] of ROWS) for (let i = 0; i < a.mem.length; i++) if (a.mem[i] || b.mem[i]) {
     const x = unloc(ROWREF.get(a.ref), i); if (dec(a.mem[i] + b.mem[i] * 65536, 9) !== mm.mem[x]) { fail = { cyc, instr, msg: `final audit: RAM ${x}` }; break; } }
@@ -490,6 +501,7 @@ function runOne(src, label, opts = {}) {
   if (frozen && !fail) { const pc = pcOf(), upc = word(s.v, 'Control:UPC');
     const cpuW = s.writes.slice(frozen.w).filter(([r]) => ROWREF.has(r) || RFCHIPS.some(c => c.ref === r));
     if (pc !== frozen.pc || upc !== frozen.upc || cpuW.length) fail = { cyc, instr, msg: `after HALT the machine kept running: PC ${frozen.pc} -> ${pc}, UPC ${frozen.upc} -> ${upc}, ${cpuW.length} main/register RAM writes (${[...new Set(cpuW.map(([r, a]) => `${r}@${a}`))].slice(0, 6).join(' ')})` }; }
+  if (opts.postHalt && frozen && !fail) { const msg = opts.postHalt(() => { const r = s.slot(); G++; return r; }, mm); if (msg) fail = { cyc, instr, msg }; }
   if (opts.stats) opts.stats(mm);
   if (opts.finish && !fail) { const msg = opts.finish(mm, asm.symbols); if (msg) fail = { cyc, instr, msg }; }
   if (fail) { console.log(trace.join('\n'));
@@ -678,6 +690,70 @@ VECS: .word #0
       console.log(`  PS/2: ${N} keyboard frames by interrupt (KBUF ${KEYS.map(k => '0x' + k[0].toString(16)).join(' ')}), ${pulses[1]} IRQSET1 pulses; keyboard inhibit waited ${dev.K.waitedHeld} slots; ${dev.K.aborts + dev.M.aborts} mid-frame aborts;`);
       console.log(`  mouse: bad-parity frame latched while masked (status 3), the second held off ${dev.M.waitedHeld} slots, released by the ISR's read, then in by interrupt (MBUF 0x5a 0x33, statuses 0 0); H = ${H} slots`); } };
   ok += runOne(src, 'ps2', opts); }
+else if (WHICH === 'video' || WHICH === 'videoscan') { n = 1;
+  // ---- stage 3 part 2, the Video ports on the whole machine (2026-11-21, night). Ports 2-5 (X, Y, pixel, fill) and
+  // CPU framebuffer stores (FB_BASE..), against the microsim's IOCard ports and mm.vram. The CPU waits on IORDY, which
+  // the Video card now drives through U120 (found here: READY was never on IORDY).
+  //   video:     an OUT 5 fill first (the whole 354,294-pixel framebuffer, about 20 ms of waiting), IN 5; then pixel
+  //              writes and reads at edge coordinates (negative, wrapping, the last row and column) and out-of-range
+  //              values (truncated to 6 trits); CPU stores and loads through FB_BASE; then a full audit of VRAM-C and
+  //              VRAM-S against mm.vram.
+  //   videoscan: a random T3 picture preloaded in mm.vram and both VRAM chips (declared, like the RAM preload), a few
+  //              hundred random pixel writes and reads over it, HALT, then the machine keeps running (halted: the
+  //              scan-out doesn't stop) until one whole VGA frame has been captured at the DAC and sync pins; checked
+  //              with video-scan-test.js's rules, lifted below.
+  const { ld } = require('../microsim/bare-drivers.js');
+  let sv = WHICH === 'video' ? 5 : 6; const rv = () => (sv = (sv * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const ri = (lo, hi) => lo + Math.floor(rv() * (hi - lo + 1));
+  const px = (x, y, v) => `${ld('R1', x)}\nOUT R1, #2\n${ld('R1', y)}\nOUT R1, #3\n${ld('R1', v)}\nOUT R1, #4\nIN R2, #4\nIN R3, #2\nIN R4, #3`;
+  let body = '';
+  if (WHICH === 'video') {
+    const edge = [[0, 0, 1], [728, 485, -1], [729, 486, 364], [-1, -1, -364], [-730, 1000, 365], [364, 243, -365], [1, 485, 9841], [728, 0, -9841], [12345, -6789, 4321]];
+    body = `LI R1, #200\nOUT R1, #5\nIN R2, #5\n` + edge.map(([x, y, v]) => px(x, y, v)).join('\n') + '\n'
+      + Array.from({ length: 40 }, () => px(ri(-2000, 2000), ri(-2000, 2000), ri(-9841, 9841))).join('\n') + '\n'
+      // CPU framebuffer stores and loads (VBUSY on J2), including one value that must truncate
+      + [[0, 77], [729 * 100 + 5, -300], [354293, 500], [200000, 364]].map(([q, v]) => `${ld('R2', VT.FB_BASE + q)}\n${ld('R1', v)}\nST R1, R2, #0\nLT R3, R2, #0`).join('\n') + '\n'
+      + `LI R1, #-77\nOUT R1, #5\nIN R2, #5\n${px(10, 10, 5)}`.replace(/OUT R1, #5\nIN R2, #5\n/, 'OUT R1, #5\nIN R2, #5\n');
+  } else body = Array.from({ length: 300 }, () => px(ri(0, 728), ri(0, 485), ri(-364, 364))).join('\n');
+  const src = `MAIN: ${body}\nHALT\n`;
+  let pic = null; if (WHICH === 'videoscan') { pic = new Int16Array(VT.FB_SIZE); for (let p = 0; p < VT.FB_SIZE; p++) pic[p] = ri(-364, 364); }
+  // ---- video-scan-test.js's frame check, lifted (Kehai Interim, 2026-11-18); changes: reads a capture array passed
+  // in, T3 only (the machine boots in T3), and reports instead of pushing to its msgs
+  const toT3 = (v, k) => { const t = []; let x = v; for (let i = 0; i < k; i++) { let r = ((x % 3) + 3) % 3; if (r === 2) r = -1; t.push(r); x = (x - r) / 3; } return t; };
+  const expLv = (r, c, vr) => { const t = toT3(vr[r * 729 + c], 6); return [t[0] + 3 * t[1] + 4, t[2] + 3 * t[3] + 4, t[4] + 3 * t[5] + 4]; };
+  const lvOf = (d, ch) => { const b = (d >> (4 * ch)) & 15; return 3 * ((b & 1) + ((b >> 1) & 1)) + ((b >> 2) & 1) + ((b >> 3) & 1); };
+  const checkFrame = (cap, NS, v0, vr) => { let bad = 0, first = null; const pix = new Uint8Array(628 * 1056); const base = v0 - 601 * 1056;
+    for (let r = 0; r < 486; r++) for (let c = 0; c < 729; c++) { const at = v0 + (57 + r - 601) * 1056 + 35 + c; pix[at - base] = 1; const d = cap[at] & 4095;
+      const got = [0, 1, 2].map(ch => lvOf(d, ch)), e = expLv(r, c, vr); if (got.join() !== e.join()) { bad++; if (!first) first = `pixel (${r}, ${c}): levels ${got} vs ${e}`; } }
+    let blankBad = 0; for (let i = 0; i < 628 * 1056; i++) if (!pix[i] && base + i < NS && base + i >= 0 && (cap[base + i] & 4095)) { blankBad++; if (!first) first = `non-black outside the picture at capture slot ${base + i}`; }
+    return { bad, blankBad, first }; };
+  const DACN = [...Array(12).keys()].map(i => `Video:DAC${i}`);
+  let dbgN = 0; const num = (v, pre, k) => { let x = 0; for (let i = 0; i < k; i++) x += (v.get(`${pre}${i}`) | 0) * 2 ** i; return x; };
+  const WN = ['Video:/LDC', 'Video:FL', 'Video:R2', 'Video:VSEL', 'Video:READY', 'Video:/LDIO', 'Video:SETFL', 'Video:CW_/IN', 'Video:CW_/OUT', 'Video:CW_/BIO'];
+  let wPrev = null, wN = 0;
+  const watch = (lo, g) => { const fc = [...Array(12).keys()].reduce((a, i) => a + (lo.get('Video:FC' + i) << i), 0), cur = WN.map(n => lo.get(n)).join('') + ' FC ' + fc;
+    if (cur !== wPrev && wN++ < 400) console.log(`  [w] slot ${g}: ${WN.map(n => n.slice(6) + '=' + lo.get(n)).join(' ')} FC ${fc} PORT ${[0,1,2,3,4,5].reduce((a, i) => a + (lo.get('PORT' + i) << i), 0)}`); wPrev = cur; };
+  const opts = { io: true, cap: WHICH === "video" ? 400000 : 150000, vramPreload: pic ? () => pic : undefined,
+    onSlot: process.env.VID_WATCH ? (hi, lo, g) => watch(lo, g) : !process.env.VID_DEBUG ? undefined : (hi, lo, g, last) => { if (dbgN++ < 4 * +process.env.VID_DEBUG && (lo.get('Video:CW_/OUT') === 0 || lo.get('Video:CW_/IN') === 0 || last))
+      console.log(`  [vdbg] slot ${g}${last ? ' EDGE' : ''}: D0 ${lo.get('D0+')}${lo.get('D0-')} D1 ${lo.get('D1+')}${lo.get('D1-')} D2 ${lo.get('D2+')}${lo.get('D2-')} hiD0 ${hi.get('D0+')}${hi.get('D0-')} CI ${num(lo, 'Video:CI', 10)} X ${num(lo, 'Video:X', 10)} PX ${num(lo, 'Video:PX', 12)} /OUT ${lo.get('Video:CW_/OUT')} /IN ${lo.get('Video:CW_/IN')} /CEDGE ${lo.get('/CEDGE')} PORT ${num(lo, 'PORT', 6)} UA ${num(lo, 'UA', 10)} /LDX ${lo.get('Video:/LDX')} /LDP ${lo.get('Video:/LDP')} RESET ${lo.get('RESET')} READY ${lo.get('Video:READY')} IORDY ${lo.get('IORDY')} SA ${num(lo, 'SA', 19)} /SWR ${lo.get('/SWR')} SO ${num(lo, 'SO', 12)} SI ${num(lo, 'SI', 12)} VBUSY ${lo.get('VBUSY')} UPC ${num(lo, 'Control:UPC', 0)}`); },
+    postHalt: WHICH !== 'videoscan' ? undefined : (slot, mm) => {
+      const MAXS = 2 * 663168 + 40000, cap = new Uint16Array(MAXS); let k = 0, v0 = -1; const t1 = Date.now();
+      while (k < MAXS) { const { lo } = slot(); let d = 0; for (let i = 0; i < 12; i++) d |= lo.get(DACN[i]) << i; cap[k] = d | lo.get('Video:HSYNC') << 12 | lo.get('Video:VSYNC') << 13;
+        if (k && v0 < 0 && (cap[k] >> 13 & 1) && !(cap[k - 1] >> 13 & 1) && k - 601 * 1056 >= 0) v0 = k;
+        k++; if (v0 >= 0 && k >= v0 + 27 * 1056) break; if (k % 100000 === 0) process.stderr.write(`  scan capture: ${k} slots (${((Date.now() - t1) / 1000) | 0} s)\n`); }
+      if (v0 < 0) return `no VSYNC with a whole frame before it in ${k} slots`;
+      const hs = []; for (let i = 1; i < k; i++) if ((cap[i] >> 12 & 1) && !(cap[i - 1] >> 12 & 1)) hs.push(i);
+      for (let i = 1; i < hs.length; i++) if (hs[i] - hs[i - 1] !== 1056) return `HSYNC period ${hs[i] - hs[i - 1]} at capture slot ${hs[i]}`;
+      const f = checkFrame(cap, k, v0, mm.vram); if (f.bad || f.blankBad) return `scan-out frame: ${f.bad} picture pixels wrong, ${f.blankBad} border slots not black (first: ${f.first})`;
+      console.log(`  scan-out: one whole frame captured after HALT (${k.toLocaleString()} slots, ${hs.length} HSYNC), all 354,294 picture pixels at the right DAC levels, the border black`); },
+    finish: (mm) => { const a = vramAudit(mm); if (a) return a;
+      console.log(`  VRAM-C and VRAM-S both equal the microsim's framebuffer (354,294 pixels; ${mm.vram.filter(v => v).length} non-zero); the CPU waited ${mm.io ? '' : ''}on IORDY as shown above`); } };
+  ok += runOne(src, WHICH, opts); }
+else if (WHICH === 'vprobe') { n = 1;   // diagnostic: IN 5 with the fill colour preset (no fill), then OUT 5 / IN 5 is NOT run
+  const VTp = require('../cards/video-tables.js'), e = VTp.encRails(200, 8), u16 = chip.get('Video.U16');
+  const opts = { io: true, cap: 2000, timer: (mm) => { mm.io.displayCmd = 200; u16.q = []; for (let i = 0; i < 12; i++) u16.q[i < 9 ? 9 + i : 18 + i - 9] = (e >> i) & 1; } ,
+    onSlot: (hi, lo, g, last) => { if (process.env.VID_DEBUG && lo.get('Video:CW_/IN') === 0 || process.env.VID_DEBUG && last) console.log(`  [p] slot ${g}${last ? ' EDGE' : ''} /IN ${lo.get('Video:CW_/IN')} /BIO ${lo.get('Video:CW_/BIO')} VSEL ${lo.get('Video:VSEL')} SEL ${lo.get('Video:SEL0')}${lo.get('Video:SEL1')} /LDIO ${lo.get('Video:/LDIO')} /IOCE ${lo.get('Video:/IOCE')} R2 ${lo.get('Video:R2')} FC ${[...Array(12).keys()].reduce((a, i) => a + (lo.get('Video:FC' + i) << i), 0)} PORT ${[0,1,2,3,4,5].reduce((a, i) => a + (lo.get('PORT' + i) << i), 0)}`); } };
+  ok += runOne(`MAIN: IN R2, #5\nIN R3, #2\nIN R4, #5\nHALT\n`, 'vprobe', opts); }
 else if (WHICH === 'file') { n = 1; ok += runOne(require('fs').readFileSync(process.argv[3], 'utf8'), process.argv[3]); }
 else for (let p = 0; p < NPROG; p++) { n++; const src = genRandom(); if (runOne(src, `random ${p}`)) ok++; else { console.log(src); break; } }
 console.log(`program-lockstep: ${ok}/${n} programs match`);

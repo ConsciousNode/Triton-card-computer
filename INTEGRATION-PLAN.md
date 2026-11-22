@@ -273,8 +273,28 @@ could pass every card test. The Registers card's test catching a Control card fa
   - Raw output: `integration/RESULTS-stage3-ps2.txt`.
   - Not modelled, by the microsim's design: a status IN in the same instruction as a latch would see the card's flag
     before the microsim's instruction-grained port does. The workload reads status only when no frame can latch.
+- **Stage 3 part 2, the Video ports on the whole machine: match (2026-11-22, about 2 am).** Two findings first:
+  - **READY was never on IORDY** (predicted in "What it will probably find"). Fix: U120, a 74LVC1G07 open-drain
+    buffer, READY → the backplane's wired-AND IORDY. Video card 103 chips. Mutant VID_NO_STALL, caught, but only at
+    instruction 2,221: a pixel operation usually finishes inside its own cycle and WAIT, and overruns only when the
+    scan-out fetch takes the slots. On a real board this would have been a rare, timing-dependent screen glitch.
+  - **The Video card's pipeline register U2 was drawn on SCLK, not the CPU clock**, so it ran one microword ahead and
+    strobed the port registers in the cycle before the OUT, from an empty bus. The card harnesses clocked U2 by hand
+    at the CPU edge, testing the intended design rather than the drawing. Fix: U2 on CLK, as on the I/O card. Mutant
+    PIPE_ON_SCLK, caught at the first pixel read.
+  - `videoscan`: a random T3 picture preloaded (declared), 300 pixel writes and reads, HALT; then the halted machine
+    keeps scanning out and one whole VGA frame is captured at the DAC and sync pins: 1,173 HSYNC at 1,056 slots, all
+    354,294 picture pixels at the right DAC levels (video-scan-test.js's rules, lifted), the border black. 20,106
+    microcycles plus 1,238,583 capture slots, 109 min. VRAM-C and VRAM-S equal mm.vram.
+  - `video`: OUT 5 fill, IN 5, 49 pixel writes and reads at edge coordinates and truncating values, CPU framebuffer
+    stores and loads (checked in both VRAM chips at every boundary), a second fill and a pixel. 381,951 microcycles,
+    379,078 of them waiting on IORDY (two fills, about 38 ms of machine time), 91 min. Full VRAM audit: match.
+  - Card level on the corrected netlist: video-card-test directed and video-scan-test t3, 0 mismatches. Whole machine
+    after the fix: poop, console, directed match. Raw output: `integration/RESULTS-stage3-video.txt`.
+  - **Stage 3 is done:** every device on the machine (console, timer/RTC, SD, PS/2 keyboard and mouse, Video) runs
+    on the whole machine in lockstep with the microsim.
 - **Next:**
-  - the rest of stage 3 part 2: the video ports;
+  - the KERK front panel;
   - JPUSB steps 2-4: the 48 MHz/SCLK boundary and port interface, the TritOS driver, the whole-machine keyboard test;
   - after that, the KERK panel.
 

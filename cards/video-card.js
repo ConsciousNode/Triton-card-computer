@@ -14,12 +14,12 @@ const CW = ['/IN', '/OUT', '/BIO'];
 
 function build(csImage, mutant) {
   const c = new Card('Video');
-  c.input('SCLK', 'RESET', '/CEDGE', 'MODE', 'VBUSY', ...[...Array(10).keys()].map(i => `UA${i}`), ...[...Array(6).keys()].map(i => `PORT${i}`), ...[...Array(12).keys()].map(i => `SO${i}`));
+  c.input('SCLK', 'CLK', 'RESET', '/CEDGE', 'MODE', 'VBUSY', ...[...Array(10).keys()].map(i => `UA${i}`), ...[...Array(6).keys()].map(i => `PORT${i}`), ...[...Array(12).keys()].map(i => `SO${i}`));
   for (let k = 0; k < 27; k++) c.input(T(`D${k}`, 0), T(`D${k}`, 1));
   const sram = (ref, part, addr, data, mem) => { const na = part === 'IS61WV5128' ? 19 : 21, pins = { '/CE': 'GND', '/OE': 'GND', '/WE': 'VCC' };
     for (let i = 0; i < na; i++) pins[`A${i}`] = addr[i] || 'GND'; data.forEach((n, i) => { if (n) pins[`IO${i}`] = n; }); c.add(ref, part, pins, { mem }); };
-  const reg18 = (ref, d, q, clken1, clken2 = clken1, oe = 'GND') => { const pins = {};
-    for (const h of [1, 2]) Object.assign(pins, { [`${h}/OE`]: oe, [`${h}/CLKEN`]: h === 1 ? clken1 : clken2, [`${h}CLK`]: 'SCLK', [`${h}/CLR`]: 'VCC' });
+  const reg18 = (ref, d, q, clken1, clken2 = clken1, oe = 'GND', clk = 'SCLK') => { const pins = {};
+    for (const h of [1, 2]) Object.assign(pins, { [`${h}/OE`]: oe, [`${h}/CLKEN`]: h === 1 ? clken1 : clken2, [`${h}CLK`]: clk, [`${h}/CLR`]: 'VCC' });
     for (let i = 0; i < 18; i++) { const h = i < 9 ? 1 : 2, j = i % 9; pins[`${h}D${j}`] = d[i] || 'GND'; if (q[i]) pins[`${h}Q${j}`] = q[i]; } c.add(ref, 'ALVCH16823', pins); };
   const mux157 = (ref, s, i0, i1, y) => { const pins = { S: s, '/E': 'GND' }; for (let ch = 1; ch <= 4; ch++) { const k = ch - 1;
       Object.assign(pins, { [`${ch}I0`]: i0[k] || 'GND', [`${ch}I1`]: i1[k] || 'GND' }); if (y[k]) pins[`${ch}Y`] = y[k]; } c.add(ref, 'LVC157', pins); };
@@ -27,7 +27,10 @@ function build(csImage, mutant) {
   const rails = (name, n) => { const w = []; for (let k = 0; k < n; k++) w.push(T(`${name}${k}`, 0), T(`${name}${k}`, 1)); return w; };
   // --- own control store (IN, OUT, BUS = IO), pipeline off in RESET, pull-ups = idle ---
   sram('U1', 'IS61WV5128', bits('UA', 10), ['CSD0', 'CSD1', 'CSD2'], csImage);
-  reg18('U2', ['CSD0', 'CSD1', 'CSD2'], CW.map(n => `CW_${n}`), 'GND', 'GND', 'RESET');
+  // the pipeline register on the CPU clock, as on every other card (2026-11-21, found at integration: it was drawn on
+  // SCLK, so it took the NEXT microword one slot after UA changed and strobed the ports a cycle early, while the bus was
+  // empty; the card harnesses clocked U2 by hand at the CPU edge and so tested the intended design, not the drawing)
+  reg18('U2', ['CSD0', 'CSD1', 'CSD2'], CW.map(n => `CW_${n}`), 'GND', 'GND', 'RESET', mutant === 'PIPE_ON_SCLK' ? 'SCLK' : 'CLK');
   c.add('RN1', 'RPACK8', { P1: 'CW_/IN', P2: 'CW_/OUT', P3: 'CW_/BIO' });
   // --- glue first (gates feed table addresses) ---
   c.add('U3', 'LVC04', { '1A': 'VBUSY', '1Y': 'FREE', '2A': 'R2', '2Y': '/R2', '3A': 'VSEL', '3Y': '/VSEL', '4A': 'FCNT', '4Y': '/FCE' });
@@ -122,6 +125,10 @@ function build(csImage, mutant) {
   sram('U117', 'IS61WV5128', [...bits('BP', 12), 'MODE', 'BPIC'], bits('PD', 8), pt[0]);
   sram('U118', 'IS61WV5128', [...bits('BP', 12), 'MODE', 'BPIC'], ['PD8', 'PD9', 'PD10', 'PD11'], pt[1]);
   reg18('U119', [...bits('PD', 12), 'BHS', 'BVS'], [...bits('DAC', 12), 'HSYNC', 'VSYNC'], 'GND');
+  // READY onto the backplane's IORDY (2026-11-21, found at integration: the card-level harnesses let the CPU wait on
+  // READY directly, so nothing ever stalled the real machine's CPU). IORDY is a wired-AND, pulled up on the I/O card
+  // (RN4); every source of a stall drives it through an open-drain buffer. Mutant VID_NO_STALL: never pulls it low.
+  c.add('U120', 'LVC1G07', { A: mutant === 'VID_NO_STALL' ? 'VCC' : 'READY', Y: 'IORDY' });
   if (process.env.LOADPATH) require('./loadpath.js').addLoadPath(c, { worldLoad: { RESET: 1 } });   // COPY-ENGINE.md option B
   return c;
 }

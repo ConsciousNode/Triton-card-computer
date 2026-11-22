@@ -237,6 +237,17 @@ All 6 killed:
 - Plus mutants: sync off by one line, a T2 scale off, palette diad swap, fetch losing priority to a fill, a line-buffer
   bank flip.
 
+## Found at integration (2026-11-21/22, whole machine, `integration/program-lockstep.js video` / `videoscan`)
+1. **READY was never on IORDY.** The card-level harnesses let the CPU wait on READY directly, so nothing in the drawing
+   ever stalled the real CPU: a fill (20 ms) would have been run over by the next instruction. **Fix:** U120, a
+   74LVC1G07 (one open-drain buffer, SOT-23-5), READY → the backplane's wired-AND IORDY, beside the I/O card's two
+   sources and its pull-up (RN4). 103 chips. Mutant VID_NO_STALL.
+2. **The pipeline register U2 was drawn on SCLK, not the CPU clock.** The `reg18` helper put every register on SCLK,
+   U2 included. On SCLK, U2 takes the *next* microword one slot after the backplane's UA changes, so the card strobed
+   X, Y, pixel and colour at the edge of the cycle *before* the OUT, while the bus was empty: every port register
+   loaded 0. The card harnesses clocked U2 by hand at the CPU edge (and skipped it on SCLK), so they tested the
+   intended design, not the drawing. **Fix:** U2 on CLK, as on the I/O card. Mutant PIPE_ON_SCLK.
+
 ## Open
 - **SCLK** on the backplane (spare 2 → 1); the clock generator on the Control card has to be 40 MHz ÷ 4 with the
   carry-cycle stretch.

@@ -1,0 +1,30 @@
+# stage 3 part 2, the Video ports on the whole machine (2026-11-22). Raw output.
+## node integration/program-lockstep.js videoscan
+  terminal: "" (0 bytes, 0 framing errors); the CPU waited 3895 microcycles on IORDY
+  scan-out: one whole frame captured after HALT (1,238,583 slots, 1173 HSYNC), all 354,294 picture pixels at the right DAC levels, the border black
+  VRAM-C and VRAM-S both equal the microsim's framebuffer (354,294 pixels; 353589 non-zero); the CPU waited on IORDY as shown above
+videoscan: 2702 instructions, 20106 microcycles, 6513 s: match
+program-lockstep: 1/1 programs match
+
+real	108m49.110s
+user	71m11.348s
+sys	0m7.650s
+
+## node integration/program-lockstep.js video (run with VID_WATCH=1; the [w] signal-change lines removed)
+  terminal: "" (0 bytes, 0 framing errors); the CPU waited 379078 microcycles on IORDY
+  VRAM-C and VRAM-S both equal the microsim's framebuffer (354,294 pixels; 354294 non-zero); the CPU waited on IORDY as shown above
+video: 479 instructions, 381951 microcycles, 5471 s: match
+program-lockstep: 1/1 programs match
+
+real	91m18.359s
+user	89m30.907s
+sys	0m15.030s
+
+## positive controls (last lines)
+MACHINE_MUTANT=Video:PIPE_ON_SCLK -> videoscan: 8 instructions, 46 microcycles, 0 s: FAIL at microcycle 46 (instruction 7): bus 0 vs -4
+MACHINE_MUTANT=Video:VID_NO_STALL -> videoscan: 2222 instructions, 13330 microcycles, 223 s: FAIL at microcycle 13330 (instruction 2221): bus 51 vs 155
+
+## card level on the corrected netlist
+video-card-test directed: 6,946 microcycles (+199,383 extra wait), 0 mismatches
+video-scan-test t3: 640,000 slots, 1 frame checked, 0 mismatches
+whole machine after the fix: poop, console, directed match

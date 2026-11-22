@@ -174,6 +174,9 @@ const P = {
   // resistor makes the wired-AND (2026-11-19: the I/O card's IORDY, one open-drain source per thing that can stall)
   LVC07: { out: sec(6).map(i => `${i}Y`), tri: true,
     eval(c, g, s) { for (const i of sec(6)) if (c.pins[`${i}Y`]) s(`${i}Y`, g(`${i}A`) ? 'Z' : 0); } },
+  // TI SN74LVC1G07 / Nexperia 74LVC1G07: one buffer with an open-drain output (SOT-23-5). 2026-11-21, integration
+  // stage 3: the Video card's READY onto the backplane's wired-AND IORDY (it was never connected; see INTEGRATION-PLAN)
+  LVC1G07: { out: ['Y'], tri: true, eval(c, g, s) { if (c.pins.Y) s('Y', g('A') ? 'Z' : 0); } },
   // ---- JPUSB (the Bare USB card, 2026-11-21): parts Neon's netlist uses that the card computer didn't have ----
   // 74LVC86A: quad 2-input XOR
   LVC86: { out: sec(4).map(i => `${i}Y`), eval(c, g, s) { for (const i of sec(4)) if (c.pins[`${i}Y`]) s(`${i}Y`, g(`${i}A`) ^ g(`${i}B`)); } },
