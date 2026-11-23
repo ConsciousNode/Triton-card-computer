@@ -1,1 +1,1 @@
-{"card": "Video", "height": 233.35, "chips": 103, "caps": 102, "nets": 636, "connector_pins_used": 124, "airwires": 1082, "airwire_m": 53.73, "fits": true, "back_side_chips": 0}
+{"card": "Video", "overlaps": 0, "height": 233.35, "chips": 103, "caps": 102, "nets": 636, "connector_pins_used": 124, "airwires": 1082, "airwire_m": 36.84, "fits": true, "back_side_chips": 0}

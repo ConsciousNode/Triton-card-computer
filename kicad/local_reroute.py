@@ -30,7 +30,12 @@ def seg_hits_box(a, c, x0, y0, x1, y1):
     return False
 # ---- 1. rip ----
 ripped, nets = [], set()
-for t in list(b.GetTracks()):
+# --nets=A,B: route these nets too; --norip: rip nothing, only thread the named nets through free space (2026-11-22: Video's
+# one open connection, FC0, a 30 mm gap; the routing window is the RIP box + margin as always)
+NORIP = '--norip' in sys.argv
+for a_ in sys.argv:
+    if a_.startswith('--nets='): nets.update(a_[7:].split(','))
+for t in ([] if NORIP else list(b.GetTracks())):
     if t.IsLocked() or t.GetNetname() in PWR or not t.GetNetname(): continue
     hit = inside(t.GetPosition(), X0, Y0, X1, Y1) if t.GetClass() == 'PCB_VIA' else seg_hits_box(t.GetStart(), t.GetEnd(), X0, Y0, X1, Y1)
     # --rip-outer: inner-layer tracks stay unless they end at a ripped via (2026-11-22: clipped In2 bus runs at minimum

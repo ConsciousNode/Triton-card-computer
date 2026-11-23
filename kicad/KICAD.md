@@ -57,7 +57,8 @@ a share of one side of a 3U board:
 | Registers | 6 | 20 | 0 open | 1,544 | 353 | 8.6 m | 0 errors |
 | IO | 6 | 70 | 0 open | 7,454 | 1,380 | 29.0 m | 0 errors (2 hand touches, below) |
 | ALU | 6 | 97 | 0 open (COL_FILL=0.85) | 14,537 | 2,167 | 51.0 m | 0 errors (2 hand touches, below) |
-| Video | 6 | 103 | routing | | | | |
+| Video | 6 | 103 | 0 open | 12,369 | 2,561 | 44.4 m | 0 errors (FC0 by `local_reroute.py`, below) |
+| Control | 6 | 129 (35 on the back) | routing (COL_FILL=0.85) | | | | |
 
 Remaining DRC findings are silkscreen-only (silk over copper, overlapping reference text), plus "footprint not in the
 project library" notes from running headless.
@@ -88,6 +89,12 @@ project library" notes from running headless.
   - six dangling router fragments of GND/+3V3 (the planes carry power) were deleted;
   - one BS24+ via was 0.089 mm from a C8- track on In2 (a real shortfall, not rounding). It was moved 0.08 mm, with
     its two tracks, to the first spot that my own geometry check cleared; KiCad's DRC confirmed it.
+
+- **Video** (built before COL_FILL; one-sided): Freerouting took 8 h 14 min plus optimising and left one connection
+  open, FC0, a 30 mm gap from a stub at (31.8, 84.1) to U43 pin 5. `local_reroute.py --norip --nets=FC0` threaded it
+  through free space without ripping anything: all on one layer, no vias, a 0.05 mm-grid staircase (266 small
+  segments, legal but not pretty; worth a hand clean-up in the GUI some day). Three dangling GND/+3V3 router crumbs
+  were deleted. KiCad DRC: 0 copper errors, 0 unconnected pads.
 
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
