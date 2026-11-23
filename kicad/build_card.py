@@ -8,7 +8,8 @@
 # Placement is a first look, not a layout. Routing is a later step (Freerouting), and so is the pinout gate (KICAD.md).
 import math, sys, os, json, re
 import pcbnew
-from pinouts import PARTS
+from pinouts import PARTS, RPACK_SMD
+if os.environ.get('RPACK_SMD'): PARTS = {**PARTS, **RPACK_SMD}   # two-sided boards: SMD resistor networks (pinouts.py)
 
 FPLIB = '/usr/share/kicad/footprints'
 W, H = 160.0, 100.0                      # 3U Eurocard: 160 mm deep, 100 mm high (6U: 233.35 high, argv[3])

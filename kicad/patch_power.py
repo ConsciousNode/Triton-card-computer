@@ -41,7 +41,7 @@ for t in b.GetTracks():
 bb = b.GetBoardEdgesBoundingBox()
 def ok(net, lay, a, v):
     vx, vy = v
-    if not (bb.GetX() + mm(0.5) < vx < bb.GetRight() - mm(0.5) and bb.GetY() + mm(0.5) < vy < bb.GetBottom() - mm(0.5)): return False
+    if not (bb.GetX() + (mm(0.5) + VR + mm(0.05)) < vx < bb.GetRight() - (mm(0.5) + VR + mm(0.05)) and bb.GetY() + (mm(0.5) + VR + mm(0.05)) < vy < bb.GetBottom() - (mm(0.5) + VR + mm(0.05))): return False   # 2026-11-22: copper edge, not centre (Memory: 8 edge-clearance errors)
     for (r, n, onF, onB, hr, pc) in pads:
         if n == net: continue
         if d_pt_rect(vx, vy, r) < VR + CL: return False

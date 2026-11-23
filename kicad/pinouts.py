@@ -95,3 +95,13 @@ PARTS['LV164'] = dict(fp=TSSOP14, pins={'A': 1, 'B': 2, 'Q0': 3, 'Q1': 4, 'Q2': 
                       power={'VCC': [14], 'GND': [7]}, status='jedec')
 PARTS['CD4060'] = dict(fp=TSSOP16, pins={'Q14': 3, 'PHI1': 11, 'MR': 12}, power={'VCC': [16], 'GND': [8]}, status='jedec')
 PARTS['LVC1G07'] = dict(fp=SOT235, pins={'A': 2, 'Y': 4}, power={'VCC': [5], 'GND': [3]}, status='jedec')
+
+# SMD resistor network for two-sided boards (2026-11-22): the SIP9 packs are through-hole and own both faces; the Memory
+# card has no room for that. Bourns 4816P-1 (SOIC-16, 8 isolated resistors, resistor k between pin k and pin 17-k; body
+# 11.18 x 5.59 mm, 1.27 mm pitch): P1..P8 on pins 1..8, the common on pins 9..16 tied together on the board. Footprint:
+# KiCad's SOIC-16W 5.3 x 10.2 mm, the nearest library land pattern; PROVISIONAL until checked against Bourns' drawing.
+# Chosen per card with RPACK_SMD=1 (build_card.py); the one-sided cards keep their SIPs.
+RPACK_SMD = {
+  'RPACK8': dict(fp='Package_SO:SOIC-16W_5.3x10.2mm_P1.27mm', pins={f'P{i}': i for i in range(1, 9)}, power={'VCC': list(range(9, 17))}, status='PROVISIONAL (Bourns 4816P-1 land pattern)'),
+  'RPACK8G': dict(fp='Package_SO:SOIC-16W_5.3x10.2mm_P1.27mm', pins={f'P{i}': i for i in range(1, 9)}, power={'GND': list(range(9, 17))}, status='PROVISIONAL (Bourns 4816P-1 land pattern)'),
+}

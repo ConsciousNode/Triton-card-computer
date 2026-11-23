@@ -75,7 +75,7 @@ def clear(pad, net, lay, a, vx, vy):
             for k in range(11):
                 t = k / 10; sx, sy = a[0] + t * (vx - a[0]), a[1] + t * (vy - a[1])
                 if d_pt_seg(sx, sy, sa, sc) < SW + CL: return False
-    if not (bb.GetX() + mm(0.5) < vx < bb.GetRight() - mm(0.5) and bb.GetY() + mm(0.5) < vy < bb.GetBottom() - mm(0.5)): return False
+    if not (bb.GetX() + (mm(0.5) + VR + mm(0.05)) < vx < bb.GetRight() - (mm(0.5) + VR + mm(0.05)) and bb.GetY() + (mm(0.5) + VR + mm(0.05)) < vy < bb.GetBottom() - (mm(0.5) + VR + mm(0.05))): return False   # 2026-11-22: copper edge, not centre (Memory: 8 edge-clearance errors)
     return True
 fan = 0; left = []
 for fp in b.GetFootprints():
