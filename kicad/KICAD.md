@@ -56,7 +56,7 @@ a share of one side of a 3U board:
 | --- | --- | ---: | --- | ---: | ---: | ---: | --- |
 | Registers | 6 | 20 | 0 open | 1,544 | 353 | 8.6 m | 0 errors |
 | IO | 6 | 70 | 0 open | 7,454 | 1,380 | 29.0 m | 0 errors (2 hand touches, below) |
-| ALU | 6 | 97 | rerouting with COL_FILL=0.85 | | | | |
+| ALU | 6 | 97 | 0 open (COL_FILL=0.85) | 14,537 | 2,167 | 51.0 m | 0 errors (2 hand touches, below) |
 | Video | 6 | 103 | routing | | | | |
 
 Remaining DRC findings are silkscreen-only (silk over copper, overlapping reference text), plus "footprint not in the
@@ -82,7 +82,12 @@ project library" notes from running headless.
   The cause was upstream. The placer filled each column to the board's full height at the 1 mm minimum gap, so the
   two chips sat 1.5 mm apart pad to pad. `COL_FILL=0.85` lets a column take only 85% of the height: the ALU gets 6
   columns, the tightest gap is 2.74 mm, and the straight-line wire total drops (45.3 m to 41.9 m). The default stays
-  1.0, so the Registers and IO boards rebuild exactly as routed.
+  1.0, so the Registers and IO boards rebuild exactly as routed. **Rerouted with it: 0 open on the first try**
+  (2 h 34 min routing plus optimising).
+- **ALU hand touches:**
+  - six dangling router fragments of GND/+3V3 (the planes carry power) were deleted;
+  - one BS24+ via was 0.089 mm from a C8- track on In2 (a real shortfall, not rounding). It was moved 0.08 mm, with
+    its two tracks, to the first spot that my own geometry check cleared; KiCad's DRC confirmed it.
 
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
