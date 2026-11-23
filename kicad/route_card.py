@@ -84,6 +84,7 @@ for fp in b.GetFootprints():
     for pad in fp.Pads():
         net = pad.GetNetname()
         if net not in ('GND', '+3V3'): continue
+        if pad.GetDrillSize().x > 0: continue                      # through-hole (2026-11-22: RN4.1 on Control): every layer already
         p0 = pad.GetPosition(); dx, dy = p0.x - c.x, p0.y - c.y
         pb = pad.GetBoundingBox()                               # out of the package along the pad's own long axis
         if pb.GetWidth() >= pb.GetHeight(): ux, uy = (1 if dx >= 0 else -1), 0
@@ -95,7 +96,7 @@ for fp in b.GetFootprints():
         # 0.5 mm-pitch TSSOP-56s, 11 pins found nothing outside; the router half-did them, 7 left unconnected, and after
         # routing all four signal layers are full there; before routing, the space under the body is empty)
         dirs = [(ux, uy), (ux - uy, uy + ux), (ux + uy, uy - ux), (-uy, ux), (uy, -ux), (-ux, -uy), (-ux - uy, -uy + ux), (-ux + uy, -uy - ux)]
-        for step in range(16):
+        for step in range(30):        # up to 4.8 mm out (2026-11-22: two-sided Control, a via must clear both faces)
             for (ex, ey) in dirs:
                 L = math.hypot(ex, ey); d = half + mm(0.45) + step * mm(0.15)
                 vx, vy = int(p0.x + ex / L * d), int(p0.y + ey / L * d)

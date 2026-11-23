@@ -210,6 +210,32 @@ def main(js, out, height=None):
                 sgn = -1 if rot[k] else 1; C.SetPosition(pcbnew.VECTOR2I(int(pos[k][0] + sgn * dx), int(pos[k][1] + sgn * dy)))
         print(f'placement: signal wirelength (HPWL) {start / 1e6:.0f} mm -> {total / 1e6:.0f} mm ({100 * (start - total) / start:.0f}% shorter)')
     if missing: print('NO PINOUT for', sorted(missing)); sys.exit(2)
+    # ---- through-hole parts own both faces (2026-11-22): the resistor packs (SIP9) are through-hole, so their pins come
+    # out on both sides; on two-sided boards back-side chips were placed under them (Control: RN2 over U10, RN7 over
+    # U209) and the overlap check, which compared footprints face by face, never saw it. Each through-hole part that
+    # touches anything on either face moves to the nearest spot clear on both faces (1 mm grid, 0.5 mm margin).
+    def bbox_mm(f):
+        bb = f.GetBoundingBox(False, False); return (pcbnew.ToMM(bb.GetX()), pcbnew.ToMM(bb.GetY()), pcbnew.ToMM(bb.GetRight()), pcbnew.ToMM(bb.GetBottom()))
+    def is_tht(f): return f.GetReference() != 'J1' and any(pd.GetDrillSize().x > 0 for pd in f.Pads())
+    def hit(r, q, m=0.5): return r[0] - m < q[2] and q[0] - m < r[2] and r[1] - m < q[3] and q[1] - m < r[3]
+    moved_tht = 0; two_sided = any(g.GetLayer() == pcbnew.B_Cu for g in board.GetFootprints())
+    for f in [f for f in board.GetFootprints() if is_tht(f)]:
+        others = [bbox_mm(g) for g in board.GetFootprints() if g is not f]
+        r = bbox_mm(f)
+        # only on two-sided boards (one-sided boards keep their placement exactly: same-face spacing is the overlap
+        # check's job); there, any through-hole part touching anything moves, which frees room for the others
+        if not two_sided or not any(hit(r, q) for q in others): continue
+        w, h = r[2] - r[0], r[3] - r[1]; px, py = pcbnew.ToMM(f.GetPosition().x), pcbnew.ToMM(f.GetPosition().y)
+        best = None
+        for yy in range(2, int(H - h - 1)):
+            for xx in range(int(x0), int(W - w - 1)):
+                q = (xx, yy, xx + w, yy + h)
+                if any(hit(q, o) for o in others): continue
+                d = math.hypot(xx - r[0], yy - r[1])
+                if best is None or d < best[0]: best = (d, xx - r[0], yy - r[1])
+        if best is None: print('NO ROOM for through-hole', f.GetReference()); continue
+        f.SetPosition(pcbnew.VECTOR2I(int(f.GetPosition().x + best[1] * 1e6), int(f.GetPosition().y + best[2] * 1e6))); moved_tht += 1
+    if moved_tht: print('through-hole parts moved clear of both faces:', moved_tht)
     # ---- decoupling caps face their pins (2026-11-22): every cap stood at 90 degrees whatever its chip's power pins
     # were doing, so on the SRAMs the cap's GND pad sat beside the +3V3 pin and the reverse, and neither pin could reach
     # the plane (4 connections the router could not make). Each cap now takes 90 or 270, whichever puts each pad
@@ -277,7 +303,9 @@ def main(js, out, height=None):
     boxes = []
     for f in board.GetFootprints():
         if f.GetReference() == 'J1': continue
-        bb = f.GetBoundingBox(False, False); boxes.append((f.GetLayer(), bb.GetX(), bb.GetY(), bb.GetRight(), bb.GetBottom(), f.GetReference()))
+        bb = f.GetBoundingBox(False, False)
+        for lay in ((pcbnew.F_Cu, pcbnew.B_Cu) if is_tht(f) else (f.GetLayer(),)):       # through-hole: both faces
+            boxes.append((lay, bb.GetX(), bb.GetY(), bb.GetRight(), bb.GetBottom(), f.GetReference()))
     overlaps = [(a[5], c[5]) for i, a in enumerate(boxes) for c in boxes[i + 1:] if a[0] == c[0] and a[1] < c[3] and c[1] < a[3] and a[2] < c[4] and c[2] < a[4]]
     if overlaps: print('OVERLAPS:', overlaps[:10])
     st = dict(card=card, overlaps=len(overlaps), height=H, chips=len(placed), caps=caps, nets=len(nets), connector_pins_used=jn, airwires=wires, airwire_m=round(wl / 1000, 2), fits=fits, back_side_chips=back)

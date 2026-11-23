@@ -1,1 +1,1 @@
-{"card": "Control", "height": 233.35, "chips": 129, "caps": 121, "nets": 690, "connector_pins_used": 152, "airwires": 1376, "airwire_m": 74.2, "fits": true, "back_side_chips": 0}
+{"card": "Control", "overlaps": 0, "height": 233.35, "chips": 129, "caps": 121, "nets": 690, "connector_pins_used": 152, "airwires": 1042, "airwire_m": 41.98, "fits": true, "back_side_chips": 35}
