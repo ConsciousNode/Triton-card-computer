@@ -58,7 +58,7 @@ a share of one side of a 3U board:
 | IO | 6 | 70 | 0 open | 7,454 | 1,380 | 29.0 m | 0 errors (2 hand touches, below) |
 | ALU | 6 | 97 | 0 open (COL_FILL=0.85) | 14,537 | 2,167 | 51.0 m | 0 errors (2 hand touches, below) |
 | Video | 6 | 103 | 0 open | 12,369 | 2,561 | 44.4 m | 0 errors (FC0 by `local_reroute.py`, below) |
-| Control | 6 | 129 (35 on the back) | **1 open** (IM2), COL_FILL=0.85 | 19,249+ | 3,079+ | 68.7 m | 1 clearance (0.118 mm), crumbs |
+| Control | 6 | 129 (35 on the back) | 0 open (COL_FILL=0.85) | 25,241 | 3,097 | 68.7 m | 0 errors (IM2 by `local_reroute.py`, below) |
 | Memory | 6 | 241 (108 on the back), SMD networks | **not routed yet** (placed, fanned out) | | | | |
 
 Remaining DRC findings are silkscreen-only (silk over copper, overlapping reference text), plus "footprint not in the
@@ -104,6 +104,19 @@ project library" notes from running headless.
   - Two Freerouting finishing passes were killed by cloud-environment restarts (4.7 h in, then 45 min).
   - Also left: one 0.118 mm clearance (IR0_7+ via near CEN on In3) and dangling GND/+3V3 crumbs. Both are fixable the
     way the ALU's were.
+- **Control, finished (2026-11-24):** a third Freerouting pass (`finish_card.py`, 7 h 28 min plus optimising, 9 h
+  in all) still left IM2 open, so the pin really is boxed in. What closed it: `local_reroute.py` with
+  `GRID_MM=0.025`, a wider rip-up (65..80 x 206..219 mm, 30 nets) and the exact join check. It went through net
+  orders until one fit (TRAPDIV0_N, IP0, IM1_N, IM2_N, IM4_N, IM3 first): 0 unrouted, no new clearance errors.
+  Then:
+  - `prune_dangling.py` removed 14 dead stubs. A first version matched only exact endpoints and pruned 2 real
+    connections (nm-off joins, T-junctions); it now counts an end on any same-net track's copper as connected.
+  - The IR0_7+ via near CEN (0.118 mm against 0.15) is 0.5/0.25 mm, the fanout's via size, which gains 0.05 mm.
+  - Eight GND/+3V3 router crumbs were deleted.
+
+  KiCad DRC: 0 copper errors, 0 unconnected pads.
+- A lesson about this workspace: background jobs live only while a reply is open, and the environment can restart
+  between turns. Long runs need the turn kept open, with every result committed as it lands.
 - **Memory:** placed two-sided with SMD resistor networks, 2,467 power pads fanned out. Freerouting was ~19 h into a
   30-pass run when the environment restarted, and a 10-pass rerun died in the next restart 45 minutes later. It needs
   one long uninterrupted run (most of a day at 30 passes). Options:

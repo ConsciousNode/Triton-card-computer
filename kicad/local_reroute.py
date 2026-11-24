@@ -10,14 +10,14 @@
 #    tracks, 0.6/0.3 vias, 0.25 mm hole clearance); every routed net becomes an obstacle for the next;
 # 4. net orders are tried until all connect (or it says which could not); with --save the board is written back and
 #    nothing is forced: a net it cannot finish leaves the board untouched.
-import sys, math, heapq, itertools, pcbnew
+import sys, os, math, heapq, itertools, pcbnew
 import numpy as np
 mm = pcbnew.FromMM; TOMM = pcbnew.ToMM
 path = sys.argv[1]; X0, Y0, X1, Y1 = map(float, sys.argv[2:6])
 MARGIN = float(sys.argv[6]) if len(sys.argv) > 6 and not sys.argv[6].startswith('-') else 4.0
 SAVE = '--save' in sys.argv
 RIP_OUTER = '--rip-outer' in sys.argv
-G = 0.05                                    # grid, mm
+G = float(os.environ.get("GRID_MM", "0.05"))   # grid, mm (GRID_MM=0.025 for boxed-in pins, 2026-11-24)
 TW, CL, VD, VDR, HH = 0.15, 0.15, 0.6, 0.3, 0.25
 LAYERS = [pcbnew.F_Cu, pcbnew.In2_Cu, pcbnew.In3_Cu, pcbnew.B_Cu]
 PWR = ('GND', '+3V3')
