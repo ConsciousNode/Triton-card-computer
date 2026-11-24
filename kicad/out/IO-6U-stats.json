@@ -1,1 +1,1 @@
-{"card": "IO", "height": 233.35, "chips": 70, "caps": 66, "nets": 359, "connector_pins_used": 126, "airwires": 716, "airwire_m": 25.29, "fits": true, "back_side_chips": 0}
+{"card": "IO", "overlaps": 0, "height": 233.35, "chips": 70, "caps": 66, "nets": 359, "connector_pins_used": 126, "airwires": 716, "airwire_m": 24.48, "fits": true, "back_side_chips": 0}

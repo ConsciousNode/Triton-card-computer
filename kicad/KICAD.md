@@ -58,7 +58,8 @@ a share of one side of a 3U board:
 | IO | 6 | 70 | 0 open | 7,454 | 1,380 | 29.0 m | 0 errors (2 hand touches, below) |
 | ALU | 6 | 97 | 0 open (COL_FILL=0.85) | 14,537 | 2,167 | 51.0 m | 0 errors (2 hand touches, below) |
 | Video | 6 | 103 | 0 open | 12,369 | 2,561 | 44.4 m | 0 errors (FC0 by `local_reroute.py`, below) |
-| Control | 6 | 129 (35 on the back) | routing (COL_FILL=0.85) | | | | |
+| Control | 6 | 129 (35 on the back) | **1 open** (IM2), COL_FILL=0.85 | 19,249+ | 3,079+ | 68.7 m | 1 clearance (0.118 mm), crumbs |
+| Memory | 6 | 241 (108 on the back), SMD networks | **not routed yet** (placed, fanned out) | | | | |
 
 Remaining DRC findings are silkscreen-only (silk over copper, overlapping reference text), plus "footprint not in the
 project library" notes from running headless.
@@ -95,6 +96,20 @@ project library" notes from running headless.
   through free space without ripping anything: all on one layer, no vias, a 0.05 mm-grid staircase (266 small
   segments, legal but not pretty; worth a hand clean-up in the GUI some day). Three dangling GND/+3V3 router crumbs
   were deleted. KiCad DRC: 0 copper errors, 0 unconnected pads.
+
+- **Control:** Freerouting took 12 h 47 min plus 2 h 41 min optimising and left 3 open. `local_reroute --norip` joined
+  CW_PCC+ and UN4. **IM2 is still open**: U89 pin 13 sits on the back face, boxed in, 57 mm from the rest of its net.
+  - The grid router finds a path only with rip-up, and then its join stubs at clipped minimum-pitch bus ends land inside
+    a neighbour's clearance (8 errors). With exact join checks (`stub_clear`), every net order fails.
+  - Two Freerouting finishing passes were killed by cloud-environment restarts (4.7 h in, then 45 min).
+  - Also left: one 0.118 mm clearance (IR0_7+ via near CEN on In3) and dangling GND/+3V3 crumbs. Both are fixable the
+    way the ALU's were.
+- **Memory:** placed two-sided with SMD resistor networks, 2,467 power pads fanned out. Freerouting was ~19 h into a
+  30-pass run when the environment restarted, and a 10-pass rerun died in the next restart 45 minutes later. It needs
+  one long uninterrupted run (most of a day at 30 passes). Options:
+  - run it where nothing restarts, e.g. Freerouting on a home machine with `out/Memory-6U.dsn`: open the DSN, route,
+    save the .ses; then `REUSE_SES=1 route_card.py` imports it;
+  - or a scripted bus router for its regular SRAM rows first, so Freerouting only finishes the rest.
 
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
