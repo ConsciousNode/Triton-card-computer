@@ -77,6 +77,13 @@ for t in ripped:
 print('clipped tracks: kept', kept, 'outside pieces')
 # ---- 2. groups per net ----
 WX0, WY0, WX1, WY1 = X0 - MARGIN, Y0 - MARGIN, X1 + MARGIN, Y1 + MARGIN
+# --win=x0,y0,x1,y1: a routing window of its own, bigger than the RIP box (2026-11-23: Control's IM2, a back-side pin boxed
+# in by its neighbours and 57 mm from the rest of its net); and the window never leaves the board (1 mm in from the edge)
+for a_ in sys.argv:
+    if a_.startswith('--win='): WX0, WY0, WX1, WY1 = map(float, a_[6:].split(','))
+_eb = b.GetBoardEdgesBoundingBox()
+WX0, WY0 = max(WX0, TOMM(_eb.GetX()) + 1.0), max(WY0, TOMM(_eb.GetY()) + 1.0)
+WX1, WY1 = min(WX1, TOMM(_eb.GetRight()) - 1.0), min(WY1, TOMM(_eb.GetBottom()) - 1.0)
 def items_of(net):
     its = []   # (kind, obj, layers, points)
     for fp in b.GetFootprints():
@@ -178,11 +185,62 @@ def terminal_cells(group):
                 for p in pts:
                     xm, ym = TOMM(p[0]), TOMM(p[1])
                     if WX0 < xm < WX1 and WY0 < ym < WY1:
-                        i, j = cell(xm, ym)
                         if k == 'via':
+                            i, j = cell(xm, ym)
                             for l2 in range(4): out[(l2, i, j)] = (xm, ym)
-                        else: out[(li, i, j)] = (xm, ym)
+                        else:
+                            # 2026-11-23: a track end joins the grid by a short stub; on minimum-pitch buses the nearest
+                            # cell put that stub inside a neighbour's clearance (Control IM2: 8 errors). Every cell
+                            # within 0.15 mm whose stub clears all other-net copper exactly is a terminal; the nearest
+                            # cell only if none does.
+                            ok = [(i, j) for (i, j) in near_cells(xm, ym, 0.15) if stub_clear(o.GetNetname(), L, xm, ym, WX0 + i * G, WY0 + j * G)]
+                            for (i, j) in (ok or [cell(xm, ym)]): out[(li, i, j)] = (xm, ym)
     return out
+def near_cells(xm, ym, r):
+    i0, j0 = cell(xm, ym); n = int(r / G) + 1
+    return [(i, j) for i in range(i0 - n, i0 + n + 1) for j in range(j0 - n, j0 + n + 1)
+            if 0 <= i < NX and 0 <= j < NY and math.hypot(WX0 + i * G - xm, WY0 + j * G - ym) <= r]
+def _dps(px, py, ax, ay, cx, cy):
+    vx, vy = cx - ax, cy - ay; L = vx * vx + vy * vy
+    t = 0 if L == 0 else max(0, min(1, ((px - ax) * vx + (py - ay) * vy) / L)); return math.hypot(px - ax - t * vx, py - ay - t * vy)
+def _dss(a, c, p, q):
+    return min(_dps(a[0], a[1], p[0], p[1], q[0], q[1]), _dps(c[0], c[1], p[0], p[1], q[0], q[1]),
+               _dps(p[0], p[1], a[0], a[1], c[0], c[1]), _dps(q[0], q[1], a[0], a[1], c[0], c[1]))
+_COPPER = None
+def _copper():
+    """other-net copper near the window, exact (mm): ('seg', layer, a, c, halfwidth) | ('via', x, y, r) | ('pad', layers, rect)"""
+    global _COPPER
+    if _COPPER is None:
+        _COPPER = []
+        for t in b.GetTracks():
+            if t.GetClass() == 'PCB_VIA':
+                x, y = TOMM(t.GetPosition().x), TOMM(t.GetPosition().y)
+                if WX0 - 2 < x < WX1 + 2 and WY0 - 2 < y < WY1 + 2: _COPPER.append((t.GetNetname(), 'via', x, y, TOMM(t.GetWidth()) / 2))
+            else:
+                a, c = (TOMM(t.GetStart().x), TOMM(t.GetStart().y)), (TOMM(t.GetEnd().x), TOMM(t.GetEnd().y))
+                if max(a[0], c[0]) < WX0 - 2 or min(a[0], c[0]) > WX1 + 2 or max(a[1], c[1]) < WY0 - 2 or min(a[1], c[1]) > WY1 + 2: continue
+                _COPPER.append((t.GetNetname(), 'seg', t.GetLayer(), a, c, TOMM(t.GetWidth()) / 2))
+        for fp in b.GetFootprints():
+            for pd in fp.Pads():
+                bb = pd.GetBoundingBox(); r = (TOMM(bb.GetX()), TOMM(bb.GetY()), TOMM(bb.GetRight()), TOMM(bb.GetBottom()))
+                if r[2] < WX0 - 2 or r[0] > WX1 + 2 or r[3] < WY0 - 2 or r[1] > WY1 + 2: continue
+                _COPPER.append((pd.GetNetname(), 'pad', [L for L in LAYERS if pd.IsOnLayer(L)], r))
+    return _COPPER
+def stub_clear(net, L, ax, ay, cx, cy):
+    need = TW / 2 + CL + 0.002
+    for it in _copper():
+        if it[0] == net: continue
+        if it[1] == 'via':
+            if _dps(it[2], it[3], ax, ay, cx, cy) < it[4] + need: return False
+        elif it[1] == 'seg':
+            if it[2] == L and _dss((ax, ay), (cx, cy), it[3], it[4]) < it[5] + need: return False
+        else:
+            if L in it[2]:
+                r = it[3]
+                for k in range(11):
+                    x, y = ax + k / 10 * (cx - ax), ay + k / 10 * (cy - ay)
+                    if math.hypot(max(r[0] - x, 0, x - r[2]), max(r[1] - y, 0, y - r[3])) < need: return False
+    return True
 DIRS = [(1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0), (1, 1, 1.4142), (1, -1, 1.4142), (-1, 1, 1.4142), (-1, -1, 1.4142)]
 VIA_COST = 30.0
 def astar(src, dst, trk, via):
