@@ -119,7 +119,8 @@ project library" notes from running headless.
   between turns. Long runs need the turn kept open, with every result committed as it lands.
 - **Memory:** placed two-sided with SMD resistor networks, 2,467 power pads fanned out. Freerouting was ~19 h into a
   30-pass run when the environment restarted, and a 10-pass rerun died in the next restart 45 minutes later. It needs
-  one long uninterrupted run (most of a day at 30 passes). Options:
+  one long uninterrupted run. A third attempt (10 passes, 2026-11-24) reached ~18.5 h of routing, still in its first
+  stage, before another environment restart ended it. So even at 10 passes it needs more than a day here. Options:
   - run it where nothing restarts, e.g. Freerouting on a home machine with `out/Memory-6U.dsn`: open the DSN, route,
     save the .ses; then `REUSE_SES=1 route_card.py` imports it;
   - or a scripted bus router for its regular SRAM rows first, so Freerouting only finishes the rest.
