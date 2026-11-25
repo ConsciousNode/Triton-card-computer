@@ -124,6 +124,16 @@ project library" notes from running headless.
   - run it where nothing restarts, e.g. Freerouting on a home machine with `out/Memory-6U.dsn`: open the DSN, route,
     save the .ses; then `REUSE_SES=1 route_card.py` imports it;
   - or a scripted bus router for its regular SRAM rows first, so Freerouting only finishes the rest.
+- **Memory on a home machine (2026-11-24, from 21:38 ET):** Freerouting **2.5.0** (Windows installer, Java bundled)
+  on Kham's laptop: 4 cores and ~900 MB for Java. It opened `out/Memory-6U.dsn` and started routing.
+  - 2.5.0 runs a fanout stage first. Of 7,274 SMD pins, 6,224 needed one; ~20 pins a minute in pass 1.
+  - It reported **970 "unfixable" clearance violations**, all GND via against GND via. The cause: the power fanout
+    lets same-net vias sit at the hole-to-hole limit (2 x 0.125 + 0.25 = 0.5 mm centre to centre). With 0.5 mm vias,
+    that's copper touching copper. The DSN has 81 such pairs; Freerouting counts each pair on every layer, in both
+    directions (81 x 6 x 2 = 972). Same net, so it's electrically harmless, and KiCad passes it (the other five
+    boards have the same rule). Freerouting just routes around them.
+  - Left as is: `REUSE_SES` re-runs the fanout and must rebuild exactly the vias the session was routed against.
+    For the next board: give same-net vias 2 x VR + CL as well, or reuse a same-net via within ~0.6 mm.
 
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
