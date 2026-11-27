@@ -136,6 +136,7 @@ if still: print('power pads left to the router:', len(still), ' '.join(still))
 print('power fanout:', fan, 'pads to plane vias')
 base = os.path.splitext(src)[0]; dsn, ses = base + '.dsn', base + '.ses'
 pcbnew.ExportSpecctraDSN(b, dsn)
+if os.environ.get('DSN_ONLY'): sys.exit(f'DSN_ONLY: wrote {dsn} (route it elsewhere, e.g. Freerouting on a home machine; then REUSE_SES=1)')   # 2026-11-27
 t0 = time.time()
 # Freerouting 1.9.0 (2026-11-22: 2.1.0 ignored every stop setting and never wrote its session); it opens a window even in
 # CLI mode, so it runs under a virtual display (xvfb-run)

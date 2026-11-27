@@ -135,6 +135,34 @@ project library" notes from running headless.
   - Left as is: `REUSE_SES` re-runs the fanout and must rebuild exactly the vias the session was routed against.
     For the next board: give same-net vias 2 x VR + CL as well, or reuse a same-net via within ~0.6 mm.
 
+- **Memory: SRAM pin swaps (2026-11-27).** On an async SRAM, which address pin a signal reaches is free, and so is which
+  data pin, as long as anything stored in the chip is laid out to match. The builder wired every SRAM in index order, so
+  signals cross over each other to reach "their" pin.
+  - `pin_swap.py` chooses a swap for each of the card's 65 **lookup tables** (SRAMs with /WE tied high) from the placed
+    board: each pin group (address, data) is an exact assignment problem (Hungarian), cost = Manhattan distance from the
+    pad to the nearest pad of that net on another part, 4 sweeps. Pins tied to GND move too. Control pins, power and NC
+    stay put. RAM and framebuffer chips are left alone: swaps there are free in hardware, but the harnesses load and
+    audit them by address.
+  - `cards/netlist.js` applies a swap file (`PINSWAP=kicad/pinswap-Memory.json`) when a card is built: pins move and the
+    table's image is laid out to match (new address bit k = old bit perm[k], same for data), sized to the highest
+    address pin that carries a signal. `PINSWAP_NOREMAP=1` moves the pins and leaves the image: the positive control.
+  - `apply_pin_swap.py` re-nets the placed board from the swapped netlist (`PINSWAP=... export-netlist.js Memory`, the
+    same netlist the tests ran) and checks every pad of every chip against it: 1,192 SRAM pads re-netted, 0 pads
+    disagree. Placement is unchanged. `route_card.py` with `DSN_ONLY=1` then writes `out/Memory-6U-pinswap.dsn` (same
+    power fanout: 2,467 pads to plane vias) for routing elsewhere.
+  - **What it buys (measured on the placement):** airwire length (MST per signal net, Manhattan) 120,553 -> 117,269 mm
+    (2.7% shorter); airwire crossings 98,477 -> 94,195 (4.3% fewer). Modest: most of the length is long bus nets
+    between far-apart chips, which no pin order can shorten. Whether Freerouting finishes faster is untested; that
+    needs a run on the home machine.
+  - **Tests with the swap** (`RESULTS-memory-card.jsonl` lines with a `pinswap` field): all seven directed workloads
+    (directed, fetchfault, irqbm, spr, bcfault, prot, fb) and random 100,000 microcycles: 0 mismatches, with the same
+    bus-drive counts as without it. NOREMAP control: 24 mismatches in the first 20 microcycles. Mutants
+    SNOOP_WRONG_SLOT and CHK3_USES_SINGLE are still caught by `prot` at the same cycles as before. Whole machine,
+    `program-lockstep.js` directed: 57 instructions, 740 microcycles, match.
+  - **Not adopted as the default yet.** Without `PINSWAP` everything builds as before. Adopting it (if the swapped
+    board routes better) means: make the swap file the default in `netlist.js`, regenerate the table ROM manifest
+    (`integration/roms-cards.js export`), and rerun the card and machine suites.
+
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
    - from the vendor pin tables, cross-read: ALVCH16823 (TI + Nexperia), IS61WV51216, IS61WV20488, CBTLV3253/3245/3257,

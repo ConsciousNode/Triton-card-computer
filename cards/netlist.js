@@ -4,11 +4,47 @@
 // a pin still reads a net nothing drives once everything else has settled, or if the netlist never settles.
 'use strict';
 const { P } = require('./parts.js');
+// ---- SRAM pin swaps (2026-11-27). PINSWAP=<swaps.json from kicad/pin_swap.py> moves a lookup table's signals to other
+// address/data pins (the board's choice, to shorten traces) and lays the table's image out to match, so every test
+// still runs against the swapped netlist. Entry: {"card": "Memory", "chips": {"U120": {"A": perm, "IO": perm}}}, where
+// perm[k] is the ORIGINAL pin index whose net now sits on pin k. Only fixed tables (/WE tied to VCC) may be swapped.
+// PINSWAP_NOREMAP=1 moves the pins but leaves the image alone: a positive control that the tests must catch.
+let SWAPS;
+function pinSwap(card, ref) {
+  if (!process.env.PINSWAP) return null;
+  if (!SWAPS) { SWAPS = JSON.parse(require('fs').readFileSync(process.env.PINSWAP, 'utf8')); SWAPS.used = new Set(); }
+  if (card !== SWAPS.card || !SWAPS.chips[ref]) return null; SWAPS.used.add(ref); return SWAPS.chips[ref];
+}
+function applySwap(ref, part, pins, extra, sw) {
+  if (pins['/WE'] !== 'VCC') throw new Error(`PINSWAP: ${ref} is not a fixed table (/WE = ${pins['/WE']})`);
+  const na = { IS61WV5128: 19, IS61WV51216: 19, IS61WV20488: 21, IS61WV204816: 21 }[part], nd = part.endsWith('16') ? 16 : 8;
+  if (!na) throw new Error(`PINSWAP: ${ref} (${part}) is not an SRAM`);
+  const pa = sw.A || [...Array(na).keys()], pd = sw.IO || [...Array(nd).keys()];
+  for (const [p, n] of [[pa, na], [pd, nd]]) if (p.length !== n || new Set(p).size !== n || p.some(j => j < 0 || j >= n)) throw new Error(`PINSWAP: ${ref}: bad permutation`);
+  const np = { ...pins };
+  for (let k = 0; k < na; k++) np[`A${k}`] = pins[`A${pa[k]}`] || 'GND';
+  for (let k = 0; k < nd; k++) { const n = pins[`IO${pd[k]}`]; if (n) np[`IO${k}`] = n; else delete np[`IO${k}`]; }
+  if (process.env.PINSWAP_NOREMAP || !extra.mem) return { pins: np, extra };
+  // image: new address bit k = old address bit pa[k]; new data bit k = old data bit pd[k]
+  // sized to the highest address pin that carries a signal (pins above it are tied to GND, so never addressed)
+  let top = 0; for (let k = 0; k < na; k++) if (np[`A${k}`] !== 'GND') top = k + 1;
+  const old = extra.mem, size = Math.max(2 ** top, 1), mem = nd === 16 ? new Uint16Array(size) : new Uint8Array(size);
+  const ainv = new Array(na); pa.forEach((j, k) => { ainv[j] = k; });
+  const chunk = [0, 8, 16].map(base => Float64Array.from({ length: 256 }, (_, v) => {   // old address byte -> new address bits
+    let r = 0; for (let b = 0; b < 8; b++) if (base + b < na && (v >> b) & 1) r += 2 ** ainv[base + b]; return r; }));
+  const dlo = Uint16Array.from({ length: 256 }, (_, v) => { let r = 0; for (let k = 0; k < nd; k++) if (pd[k] < 8 && (v >> pd[k]) & 1) r |= 1 << k; return r; });
+  const dhi = Uint16Array.from({ length: 256 }, (_, v) => { let r = 0; for (let k = 0; k < nd; k++) if (pd[k] >= 8 && (v >> (pd[k] - 8)) & 1) r |= 1 << k; return r; });
+  for (let a = 0; a < old.length; a++) { const d = old[a]; if (!d) continue;
+    mem[chunk[0][a & 255] + chunk[1][(a >> 8) & 255] + chunk[2][(a >> 16) & 255]] = dlo[d & 255] | dhi[(d >> 8) & 255]; }
+  return { pins: np, extra: { ...extra, mem } };
+}
 class Card {
   constructor(name) { this.name = name; this.chips = []; this.inputs = new Set(['GND', 'VCC']); }
   add(ref, part, pins, extra = {}) { if (!P[part]) throw new Error(`no model for ${part}`);
     // 2026-11-22: designators must be unique (the ALU had two U120s; the simulator never minded, a PCB cannot)
-    if (this.chips.some(c => c.ref === ref)) throw new Error(`duplicate designator ${ref} (${part})`); this.chips.push({ ref, part, pins, ...extra }); return this; }
+    if (this.chips.some(c => c.ref === ref)) throw new Error(`duplicate designator ${ref} (${part})`);
+    const sw = pinSwap(this.name, ref); if (sw) ({ pins, extra } = applySwap(ref, part, pins, extra, sw));
+    this.chips.push({ ref, part, pins, ...extra }); return this; }
   input(...nets) { for (const n of nets) this.inputs.add(n); }
   check() {                                     // static: every pin's net has a driver or is a card input
     const drivers = new Map();
