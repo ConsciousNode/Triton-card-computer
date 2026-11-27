@@ -148,8 +148,8 @@ project library" notes from running headless.
     address pin that carries a signal. `PINSWAP_NOREMAP=1` moves the pins and leaves the image: the positive control.
   - `apply_pin_swap.py` re-nets the placed board from the swapped netlist (`PINSWAP=... export-netlist.js Memory`, the
     same netlist the tests ran) and checks every pad of every chip against it: 1,192 SRAM pads re-netted, 0 pads
-    disagree. Placement is unchanged. `route_card.py` with `DSN_ONLY=1` then writes `out/Memory-6U-pinswap.dsn` (same
-    power fanout: 2,467 pads to plane vias) for routing elsewhere.
+    disagree. Placement is unchanged. `route_card.py` with `DSN_ONLY=1` then writes a DSN (same power fanout: 2,467 pads
+    to plane vias) for routing elsewhere. (Superseded by the anneal below.)
   - **What it buys (measured on the placement):** airwire length (MST per signal net, Manhattan) 120,553 -> 117,269 mm
     (2.7% shorter); airwire crossings 98,477 -> 94,195 (4.3% fewer). Modest: most of the length is long bus nets
     between far-apart chips, which no pin order can shorten. Whether Freerouting finishes faster is untested; that
@@ -162,6 +162,36 @@ project library" notes from running headless.
   - **Not adopted as the default yet.** Without `PINSWAP` everything builds as before. Adopting it (if the swapped
     board routes better) means: make the swap file the default in `netlist.js`, regenerate the table ROM manifest
     (`integration/roms-cards.js export`), and rerun the card and machine suites.
+
+- **Memory: a longer placement anneal + pin swaps (2026-11-27, Kham chose this over another day of Freerouting).**
+  The pin swaps alone gave ~3-4%, because most of the length is long buses between far-apart chips. So the placement
+  got a much longer anneal:
+  - `place_extract.py` writes the placed board as JSON; `place_sa.js` anneals it (20 million steps, a few seeds, ~2
+    min each): swaps of same-footprint parts, now **across faces too** (a part that changes face is mirrored, as
+    KiCad's flip does), and 180-degree turns; cost = HPWL of the signal nets, connector pins fixed. `build_card.py`'s
+    own anneal is 60,000 same-face steps.
+  - `place_apply.py` writes the result back: parts go to their new slots (flipped/turned as modelled), decoupling caps
+    stay with their slot. It checks **every signal pad's position against the model** (0 mismatches), overlaps face
+    by face (0) and the board edge (0).
+  - Alternated with `pin_swap.py`: anneal -> pin swaps -> re-net -> anneal again (T0F=0.1) -> pin swaps. Two refine
+    rounds after the first; it had converged (the last anneals moved HPWL by under 0.1%).
+  - **Measured** (`airwire_crossings.py`: MST per signal net, Manhattan, connector excluded):
+
+    | | airwire length | airwire crossings |
+    | --- | ---: | ---: |
+    | build_card placement | 120,553 mm | 98,477 |
+    | pin swaps only | 117,269 mm (-2.7%) | 94,195 (-4.3%) |
+    | **anneal + pin swaps** | **90,485 mm (-24.9%)** | **57,199 (-41.9%)** |
+
+    HPWL (the anneal's own cost) 102,580 -> 76,736 mm. Picture: `out/Memory-6U-placed2-compare.png`.
+  - Result: `out/Memory-6U-placed2.kicad_pcb` and `out/Memory-6U-placed2.dsn` (DSN_ONLY; same power fanout,
+    2,467 pads), with `pinswap-Memory.json` (sha256 046293c4a775) as its pin swaps. The earlier pins-only files
+    (`Memory-6U-pinswap.*`) are gone; RESULTS lines with a `pinswap` field but no sha are from that first swap.
+  - **Tests with the final swaps** (RESULTS lines with `sha256:046293c4a775`): the seven directed workloads and random
+    100,000: 0 mismatches, same bus-drive counts as without swaps; NOREMAP control: 24 mismatches in 20 microcycles;
+    SNOOP_WRONG_SLOT and CHK3_USES_SINGLE caught by `prot` as before. Whole machine `program-lockstep.js`: match.
+  - Still untested: whether Freerouting finishes this one in reasonable time. Further gains need moves the slot grid
+    doesn't allow (different footprints trading space, or a real re-placement by function rows).
 
 ## Gates before anything is fabricated
 1. **Pinouts, pin by pin against the vendor drawing.** Status in `pinouts.py`:
